@@ -1,0 +1,284 @@
+[
+  {
+    "crop": "TOMATO",
+    "profile": {
+      "cropLabel": "Tomato",
+      "diseaseName": "Early Blight",
+      "healthy": false,
+      "confidence": 96,
+      "severity": "SEVERE",
+      "severityStage": 2,
+      "severityLabel": "Severe Risk • Spreading",
+      "pathogen": "Alternaria solani",
+      "symptom": "Concentric brown ring lesions (Alternaria spp.)",
+      "finding": "Early Blight pattern detected on lower foliage",
+      "cause": "Fungal infection triggered by warm temperatures (24–29°C) and recent high moisture. Target-board circular brown spots with distinct yellow rings are actively weakening foliage photosynthesis.",
+      "climateTrigger": "27°C with 86% leaf wetness",
+      "verifiedBy": "AI Verified Agronomist",
+      "audioLanguages": "Hindi, English",
+      "audioDurationSeconds": 42,
+      "prescription": {
+        "category": "Chemical Fungicide (Fast Acting)",
+        "recommended": true,
+        "activeIngredient": "Mancozeb 75% WP",
+        "marketBrands": "Dithane M-45, Indofil M-45, or Chlorothalonil 75% WP",
+        "dilution": "2.5g / Liter",
+        "dilutionNote": "Water mix",
+        "tankSize": "15L Knapsack Tank",
+        "tankDose": "38 - 40 Grams",
+        "tankNote": "1 standard pump",
+        "applicationWindow": "Spray early morning (before 9 AM) or evening (after 5 PM) when sun is low. Cover top and underside of leaves.",
+        "preHarvestIntervalDays": 7,
+        "preHarvestNote": "Wait strictly **7 days** before harvesting any mature tomatoes."
+      },
+      "organicAlternative": {
+        "summary": "**Pseudomonas fluorescens** (Bio-fungicide) @ 10g/L foliar spray + **Trichoderma harzianum** soil drenching near root collar.",
+        "note": "Safest option for organic certified crop plots with 0-day waiting harvest time.",
+        "badge": "Residue Free"
+      },
+      "sanitationSteps": [
+        "Prune and immediately bag/burn infected lower leaves. Do not compost infected leaves in field edges.",
+        "Switch off overhead sprinkler systems; switch strictly to root drip lines to keep canopy leaves dry."
+      ],
+      "prescriptionShort": "Mancozeb 75% WP (2.5g/L)"
+    }
+  },
+  {
+    "crop": "WHEAT",
+    "profile": {
+      "cropLabel": "Wheat",
+      "diseaseName": "Yellow Rust",
+      "healthy": false,
+      "confidence": 93,
+      "severity": "MODERATE",
+      "severityStage": 1,
+      "severityLabel": "Moderate Risk • Early Stripes",
+      "pathogen": "Puccinia striiformis",
+      "symptom": "Bright yellow powdery stripes along leaf veins",
+      "finding": "Yellow Rust pustules lined up in stripes on upper leaves",
+      "cause": "Cool nights (10–15°C) with dew or light drizzle let wind-borne rust spores germinate on wet leaves. Every stripe releases fresh spores, so untreated rust can sweep through a field within two weeks.",
+      "climateTrigger": "14°C nights with heavy morning dew",
+      "verifiedBy": "AI Verified Agronomist",
+      "audioLanguages": "Hindi, English",
+      "audioDurationSeconds": 38,
+      "prescription": {
+        "category": "Systemic Fungicide (Curative)",
+        "recommended": true,
+        "activeIngredient": "Propiconazole 25% EC",
+        "marketBrands": "Tilt 25 EC, Bumper 25 EC, or Tebuconazole 25.9% EC (Folicur)",
+        "dilution": "1ml / Liter",
+        "dilutionNote": "Water mix",
+        "tankSize": "15L Knapsack Tank",
+        "tankDose": "15 ml",
+        "tankNote": "1 standard pump",
+        "applicationWindow": "Spray at the first sign of stripes on a dry, calm morning. Use about 200 L of spray per acre and repeat after 15 days if new stripes appear.",
+        "preHarvestIntervalDays": 30,
+        "preHarvestNote": "Stop spraying at least **30 days** before harvesting the grain."
+      },
+      "organicAlternative": {
+        "summary": "**Wettable Sulphur 80% WG** @ 2g/L foliar spray + **Pseudomonas fluorescens** @ 10g/L at the first stripes.",
+        "note": "Slows early spread only; switch to the fungicide if stripes reach the flag leaf.",
+        "badge": "Organic Approved"
+      },
+      "sanitationSteps": [
+        "Remove volunteer wheat and grassy weeds on bunds that carry rust between seasons.",
+        "Hold back the next urea top-dressing until the rust is under control; soft, leafy growth spreads it faster."
+      ],
+      "prescriptionShort": "Propiconazole 25% EC (1ml/L)"
+    }
+  },
+  {
+    "crop": "PADDY",
+    "profile": {
+      "cropLabel": "Rice / Paddy",
+      "diseaseName": "Rice Blast",
+      "healthy": false,
+      "confidence": 91,
+      "severity": "SEVERE",
+      "severityStage": 2,
+      "severityLabel": "Severe Risk • Neck Blast Threat",
+      "pathogen": "Magnaporthe oryzae",
+      "symptom": "Spindle-shaped grey lesions with brown borders",
+      "finding": "Leaf Blast lesions detected across the upper canopy",
+      "cause": "Blast spreads fastest on humid nights above 90% humidity with long leaf wetness, especially where excess nitrogen has made leaves soft. Left unchecked it moves to the panicle neck and leaves chaffy, empty grain.",
+      "climateTrigger": "25°C with 93% night humidity",
+      "verifiedBy": "AI Verified Agronomist",
+      "audioLanguages": "Hindi, English",
+      "audioDurationSeconds": 40,
+      "prescription": {
+        "category": "Systemic Fungicide (Blast Control)",
+        "recommended": true,
+        "activeIngredient": "Tricyclazole 75% WP",
+        "marketBrands": "Beam 75 WP, or Isoprothiolane 40% EC (Fuji-One)",
+        "dilution": "0.6g / Liter",
+        "dilutionNote": "Water mix",
+        "tankSize": "15L Knapsack Tank",
+        "tankDose": "9 - 10 Grams",
+        "tankNote": "1 standard pump",
+        "applicationWindow": "Spray in the evening at the first leaf lesions and again at booting to protect the panicle neck. Keep 2–3 cm of standing water after spraying.",
+        "preHarvestIntervalDays": 30,
+        "preHarvestNote": "Give the last spray at least **30 days** before harvest."
+      },
+      "organicAlternative": {
+        "summary": "**Pseudomonas fluorescens** @ 10g/L foliar spray + seed treatment @ 10g/kg for the next sowing.",
+        "note": "Works best as an early preventive spray at tillering; limited effect once neck blast starts.",
+        "badge": "Residue Free"
+      },
+      "sanitationSteps": [
+        "Split the remaining urea into small doses and skip nitrogen top-dressing until lesions stop spreading.",
+        "Clear grassy weeds from bunds and channels; they harbour the blast fungus between crops."
+      ],
+      "prescriptionShort": "Tricyclazole 75% WP (0.6g/L)"
+    }
+  },
+  {
+    "crop": "COTTON",
+    "mode": "PEST",
+    "profile": {
+      "cropLabel": "Bt Cotton",
+      "diseaseName": "Whitefly Infestation",
+      "healthy": false,
+      "confidence": 90,
+      "severity": "MODERATE",
+      "severityStage": 1,
+      "severityLabel": "Moderate Risk • Above Threshold",
+      "pathogen": "Bemisia tabaci",
+      "symptom": "Tiny white winged insects and sticky honeydew under leaves",
+      "finding": "Whitefly colonies detected on leaf undersides",
+      "cause": "Hot, dry spells (30–35°C) with little rain let whitefly numbers multiply every week. They suck sap, coat leaves in honeydew and sooty mould, and can spread Cotton Leaf Curl Virus.",
+      "climateTrigger": "34°C with 45% humidity (dry spell)",
+      "verifiedBy": "AI Verified Agronomist",
+      "audioLanguages": "Hindi, English",
+      "audioDurationSeconds": 36,
+      "prescription": {
+        "category": "Insecticide (Sucking Pest Control)",
+        "recommended": true,
+        "activeIngredient": "Diafenthiuron 50% WP",
+        "marketBrands": "Pegasus 50 WP, or Flonicamid 50% WG (Ulala)",
+        "dilution": "1.2g / Liter",
+        "dilutionNote": "Water mix",
+        "tankSize": "15L Knapsack Tank",
+        "tankDose": "18 Grams",
+        "tankNote": "1 standard pump",
+        "applicationWindow": "Spray leaf undersides early in the morning when whiteflies are sluggish. Do not repeat the same insecticide group within 15 days.",
+        "preHarvestIntervalDays": 21,
+        "preHarvestNote": "Keep a gap of at least **21 days** before the next picking."
+      },
+      "organicAlternative": {
+        "summary": "**Neem oil 1500 ppm** @ 5ml/L spray + **yellow sticky traps** @ 10 per acre; add **Verticillium lecanii** @ 5g/L in humid weather.",
+        "note": "Keeps whitefly below the damage threshold when started early, and spares pollinators.",
+        "badge": "Residue Free"
+      },
+      "sanitationSteps": [
+        "Uproot weed hosts such as Congress grass and wild okra around the field.",
+        "Avoid synthetic pyrethroid sprays; they kill natural enemies and trigger whitefly resurgence."
+      ],
+      "prescriptionShort": "Diafenthiuron 50% WP (1.2g/L)"
+    }
+  },
+  {
+    "crop": "COTTON",
+    "profile": {
+      "cropLabel": "Bt Cotton Stem",
+      "diseaseName": "Healthy Foliage",
+      "healthy": true,
+      "confidence": 99,
+      "severity": "NONE",
+      "severityLabel": "No disease detected",
+      "finding": "No lesions or pest activity detected",
+      "note": "No pathogen or fungal trace",
+      "sanitationSteps": [
+        "Keep yellow sticky traps at 10 per acre to catch early whitefly flights.",
+        "Scout 20 plants a week and check leaf undersides for sucking pests."
+      ]
+    }
+  },
+  {
+    "crop": "CHILLI",
+    "profile": {
+      "cropLabel": "Chilli",
+      "diseaseName": "Leaf Curl Virus",
+      "healthy": false,
+      "confidence": 92,
+      "severity": "SEVERE",
+      "severityStage": 2,
+      "severityLabel": "Severe Risk • Virus Spreading",
+      "pathogen": "Chilli leaf curl virus (Begomovirus)",
+      "symptom": "Upward leaf curling, puckering and thickened veins",
+      "finding": "Leaf Curl symptoms detected on young shoots",
+      "cause": "The virus has no cure: whiteflies pick it up from infected plants and weeds and spread it as they feed. Hot, dry weather multiplies whiteflies, so controlling them is what protects the healthy plants.",
+      "climateTrigger": "33°C dry spell with active whitefly flights",
+      "verifiedBy": "AI Verified Agronomist",
+      "audioLanguages": "Hindi, English",
+      "audioDurationSeconds": 44,
+      "prescription": {
+        "category": "Insecticide (Vector Control)",
+        "recommended": true,
+        "activeIngredient": "Imidacloprid 17.8% SL",
+        "marketBrands": "Confidor, Tatamida SL, or Spiromesifen 22.9% SC (Oberon)",
+        "dilution": "0.3ml / Liter",
+        "dilutionNote": "Water mix",
+        "tankSize": "15L Knapsack Tank",
+        "tankDose": "4.5 ml",
+        "tankNote": "1 standard pump",
+        "applicationWindow": "Spray young shoots and leaf undersides in the evening. Rotate to a different insecticide group for the next round to avoid resistance.",
+        "preHarvestIntervalDays": 40,
+        "preHarvestNote": "Do not pick chillies for at least **40 days** after spraying."
+      },
+      "organicAlternative": {
+        "summary": "**Neem Seed Kernel Extract (NSKE) 5%** spray + **yellow sticky traps** @ 12 per acre, with early rouging of curled plants.",
+        "note": "Cuts whitefly numbers without residues; removing infected plants stops the virus source.",
+        "badge": "Residue Free"
+      },
+      "sanitationSteps": [
+        "Uproot and burn plants with severe curling so they stop feeding the virus to whiteflies.",
+        "Grow two border rows of maize or sorghum to block whitefly movement into the field."
+      ],
+      "prescriptionShort": "Imidacloprid 17.8% SL (0.3ml/L)"
+    }
+  },
+  {
+    "crop": "SUGARCANE",
+    "profile": {
+      "cropLabel": "Sugarcane",
+      "diseaseName": "Red Rot",
+      "healthy": false,
+      "confidence": 89,
+      "severity": "SEVERE",
+      "severityStage": 3,
+      "severityLabel": "Severe Risk • Uproot Infected Clumps",
+      "pathogen": "Colletotrichum falcatum",
+      "symptom": "Reddish internal tissue with white cross-bands and a sour smell",
+      "finding": "Red Rot signs detected on stalk and leaf midrib",
+      "cause": "The fungus survives in infected setts and crop debris and travels with irrigation water. Waterlogged furrows and a susceptible variety let it rot the stalk from inside, cutting cane weight and sugar recovery.",
+      "climateTrigger": "30°C with waterlogged furrows",
+      "verifiedBy": "AI Verified Agronomist",
+      "audioLanguages": "Hindi, English",
+      "audioDurationSeconds": 46,
+      "prescription": {
+        "category": "Systemic Fungicide (Soil & Sett Treatment)",
+        "recommended": true,
+        "activeIngredient": "Carbendazim 50% WP",
+        "marketBrands": "Bavistin, Derosal, or Thiophanate-methyl 70% WP (Roko)",
+        "dilution": "1g / Liter",
+        "dilutionNote": "Water mix",
+        "tankSize": "15L Knapsack Tank",
+        "tankDose": "15 Grams",
+        "tankNote": "1 standard pump",
+        "applicationWindow": "Drench the soil around healthy clumps next to infected ones. For the next crop, soak setts in the same solution for 15 minutes before planting.",
+        "preHarvestIntervalDays": 30,
+        "preHarvestNote": "Stop drenching at least **30 days** before cane harvest."
+      },
+      "organicAlternative": {
+        "summary": "**Trichoderma viride** @ 2.5kg/acre mixed in farmyard manure for the furrows + sett dip in **Pseudomonas fluorescens** @ 10g/L.",
+        "note": "Builds soil defences for the next planting; it cannot save canes that are already rotting.",
+        "badge": "Soil Friendly"
+      },
+      "sanitationSteps": [
+        "Uproot and burn infected clumps; never leave them in the field or on the bunds.",
+        "Stop irrigation water flowing out of infected patches, and do not keep this crop as a ratoon."
+      ],
+      "prescriptionShort": "Carbendazim 50% WP (1g/L drench)"
+    }
+  }
+]

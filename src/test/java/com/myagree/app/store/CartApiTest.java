@@ -1,0 +1,159 @@
+package com.myagree.app.store;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.endsWith;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.ResultActions;
+
+import com.myagree.app.support.AgriScanApiTest;
+import com.myagree.app.support.JsonBodies;
+import com.myagree.app.support.TestUsers;
+
+@AgriScanApiTest
+class CartApiTest {
+
+    @Autowired
+    private MockMvc mvc;
+
+    @Autowired
+    private TestUsers users;
+
+    @Test
+    void seededCartMatchesTheDesignsCartBar() throws Exception {
+        mvc.perform(get("/api/cart").with(users.demoFarmer()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(2))
+                .andExpect(jsonPath("$.items[0].shortName").value("Mancozeb 500g"))
+                .andExpect(jsonPath("$.items[0].unitPrice").value(280))
+                .andExpect(jsonPath("$.items[0].lineTotal").value(280))
+                .andExpect(jsonPath("$.itemCount").value(2))
+                .andExpect(jsonPath("$.total").value(730))
+                .andExpect(jsonPath("$.freeDelivery").value(true))
+                .andExpect(jsonPath("$.summary").value("Mancozeb 500g + Doodh Dhara 5kg"));
+    }
+
+    @Test
+    void addingAProductAlreadyInTheCartMergesIntoItsLine() throws Exception {
+        long mancozebId = JsonBodies.readId(cart(), "$.items[0].productId");
+
+        addToCart(mancozebId, 2)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(2))
+                .andExpect(jsonPath("$.items[0].quantity").value(3))
+                .andExpect(jsonPath("$.items[0].lineTotal").value(840))
+                .andExpect(jsonPath("$.itemCount").value(4))
+                .andExpect(jsonPath("$.total").value(1290));
+    }
+
+    @Test
+    void addingANewProductAppendsALine() throws Exception {
+        long seedsId = productId("SEEDS");
+
+        addToCart(seedsId, 1)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(3))
+                .andExpect(jsonPath("$.items[2].id").isNumber())
+                .andExpect(jsonPath("$.items[2].productId").value(seedsId))
+                .andExpect(jsonPath("$.total").value(1210))
+                .andExpect(jsonPath("$.summary").value("Mancozeb 500g + Doodh Dhara 5kg + 1 more"));
+    }
+
+    @Test
+    void removingALineUpdatesTotals() throws Exception {
+        long mancozebLineId = JsonBodies.readId(cart(), "$.items[0].id");
+
+        mvc.perform(delete("/api/cart/items/{itemId}", mancozebLineId).with(users.demoFarmer()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.total").value(450))
+                .andExpect(jsonPath("$.freeDelivery").value(false))
+                .andExpect(jsonPath("$.summary").value("Doodh Dhara 5kg"));
+    }
+
+    @Test
+    void checkoutPlacesAnOrderAndEmptiesTheCart() throws Exception {
+        MvcResult confirmation = mvc.perform(post("/api/cart/checkout").with(users.demoFarmer()))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.itemCount").value(2))
+                .andExpect(jsonPath("$.total").value(730))
+                .andExpect(jsonPath("$.status").value("PLACED"))
+                .andReturn();
+
+        long orderId = JsonBodies.readId(confirmation, "$.orderId");
+        assertThat(JsonBodies.<String>read(confirmation, "$.message"))
+                .isEqualTo("Order #" + orderId + " placed • ₹730 • Cash on Delivery");
+        mvc.perform(get("/api/cart").with(users.demoFarmer()))
+                .andExpect(jsonPath("$.items").value(empty()))
+                .andExpect(jsonPath("$.itemCount").value(0))
+                .andExpect(jsonPath("$.total").value(0))
+                .andExpect(jsonPath("$.freeDelivery").value(false))
+                .andExpect(jsonPath("$.summary").value(""));
+    }
+
+    @Test
+    void orderMessageUsesIndianDigitGrouping() throws Exception {
+        addToCart(productId("TOOLS"), 50).andExpect(status().isOk());
+
+        mvc.perform(post("/api/cart/checkout").with(users.demoFarmer()))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.total").value(108230))
+                .andExpect(jsonPath("$.message", endsWith(" placed • ₹1,08,230 • Cash on Delivery")));
+    }
+
+    @Test
+    void checkoutOfAnEmptyCartIsRejected() throws Exception {
+        mvc.perform(post("/api/cart/checkout").with(users.demoFarmer())).andExpect(status().isCreated());
+
+        mvc.perform(post("/api/cart/checkout").with(users.demoFarmer()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.message").value("Your cart is empty"));
+    }
+
+    @Test
+    void invalidCartRequestsAreRejected() throws Exception {
+        addToCart(999, 1)
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Product 999 not found"));
+        addToCart(productId("SEEDS"), 0)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("quantity must be greater than 0"));
+        mvc.perform(post("/api/cart/items")
+                        .with(users.demoFarmer())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"quantity\": 1}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("productId must not be null"));
+        mvc.perform(delete("/api/cart/items/{itemId}", 999).with(users.demoFarmer()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Cart item 999 not found"));
+    }
+
+    private MvcResult cart() throws Exception {
+        return mvc.perform(get("/api/cart").with(users.demoFarmer())).andExpect(status().isOk()).andReturn();
+    }
+
+    private long productId(String category) throws Exception {
+        MvcResult products = mvc.perform(get("/api/store/products").param("category", category).with(users.demoFarmer()))
+                .andReturn();
+        return JsonBodies.readId(products, "$[0].id");
+    }
+
+    private ResultActions addToCart(long productId, int quantity) throws Exception {
+        return mvc.perform(post("/api/cart/items")
+                .with(users.demoFarmer())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"productId\": %d, \"quantity\": %d}".formatted(productId, quantity)));
+    }
+}
