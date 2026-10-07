@@ -22,7 +22,25 @@ public record PaymentCheckoutResponse(
         PaymentProviderKind provider,
         PaymentStatusCode status,
         @Nullable StripeCheckout stripe,
-        @Nullable RazorpayCheckout razorpay) {
+        @Nullable RazorpayCheckout razorpay,
+        @Nullable ScanAndPayOption scanAndPay) {
+
+    /**
+     * Paying the seller directly, offered when the shopkeeper or vehicle owner has set up Scan & Pay; mirrors
+     * {@code ScanAndPayOption}.
+     *
+     * @param upiId        the seller's UPI ID, or {@code null} when they only uploaded a QR
+     * @param upiLink      the UPI deep link with the amount filled in, opening a UPI app on the phone; with the UPI ID
+     * @param qrImageUrl   the QR the seller uploaded (signed media URL), shown first when there is one
+     * @param generatedQr  a QR of {@code upiLink} as a PNG data URL; with the UPI ID
+     */
+    public record ScanAndPayOption(
+            String payeeName,
+            @Nullable String upiId,
+            @Nullable String upiLink,
+            @Nullable String qrImageUrl,
+            @Nullable String generatedQr) {
+    }
 
     /** Mirrors {@code StripeCheckout}. */
     public record StripeCheckout(String publishableKey, String clientSecret) {

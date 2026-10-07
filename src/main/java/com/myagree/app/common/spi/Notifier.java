@@ -37,6 +37,10 @@ public interface Notifier {
     String REASON = "reason";
     /** Parameter: what a payment was for, e.g. "Agro Store order #12". */
     String DESCRIPTION = "description";
+    /** Parameter: a 12-digit UPI transaction reference (UTR), e.g. "412345678901". */
+    String UPI_REFERENCE = "upiReference";
+    /** Parameter: who a Scan & Pay payment went to, e.g. "Solapur Mandi Agro Depot". */
+    String PAYEE_NAME = "payeeName";
 
     /**
      * @param userId the recipient's account id ({@code Account.id()}, not a farmer or owner profile id)

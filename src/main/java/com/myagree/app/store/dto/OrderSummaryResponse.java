@@ -19,7 +19,8 @@ public record OrderSummaryResponse(
         OrderStatus status,
         PaymentMethod paymentMethod,
         String summary,
-        List<OrderLineResponse> lines) {
+        List<OrderLineResponse> lines,
+        String shopName) {
 
     /** Mirrors {@code OrderLine}. */
     public record OrderLineResponse(String name, int quantity, int unitPrice, long lineTotal) {

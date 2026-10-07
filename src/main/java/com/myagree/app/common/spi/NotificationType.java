@@ -5,8 +5,10 @@ import static com.myagree.app.common.spi.Notifier.DESCRIPTION;
 import static com.myagree.app.common.spi.Notifier.FARMER_NAME;
 import static com.myagree.app.common.spi.Notifier.LISTING_NAME;
 import static com.myagree.app.common.spi.Notifier.OWNER_NAME;
+import static com.myagree.app.common.spi.Notifier.PAYEE_NAME;
 import static com.myagree.app.common.spi.Notifier.REASON;
 import static com.myagree.app.common.spi.Notifier.SLOT;
+import static com.myagree.app.common.spi.Notifier.UPI_REFERENCE;
 
 import java.util.List;
 
@@ -40,7 +42,13 @@ public enum NotificationType {
     PAYMENT_SUCCEEDED(AMOUNT, DESCRIPTION),
 
     /** To the payer: a payment failed, nothing was charged, and they can pay again. */
-    PAYMENT_FAILED(AMOUNT, DESCRIPTION, REASON);
+    PAYMENT_FAILED(AMOUNT, DESCRIPTION, REASON),
+
+    /** To the shopkeeper or vehicle owner: a farmer paid them by Scan & Pay and asks them to confirm it arrived. */
+    PAYMENT_TO_CONFIRM(FARMER_NAME, AMOUNT, DESCRIPTION, UPI_REFERENCE),
+
+    /** To the payer: the seller says a Scan & Pay payment did not reach them; the farmer can pay again. */
+    PAYMENT_NOT_RECEIVED(PAYEE_NAME, AMOUNT, DESCRIPTION);
 
     private final List<String> parameters;
 

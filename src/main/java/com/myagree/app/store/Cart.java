@@ -45,6 +45,16 @@ public class Cart {
                 () -> items.add(new CartItem(this, product, quantity)));
     }
 
+    /** The shop whose products the cart holds; empty for an empty cart. A cart holds one shop's products. */
+    public Optional<Shop> shop() {
+        return items.stream().findFirst().map(item -> item.getProduct().getShop());
+    }
+
+    /** Whether {@code product} may join the cart: it is empty, or holds the same shop's products. */
+    public boolean accepts(Product product) {
+        return shop().map(shop -> Objects.equals(shop.getId(), product.getShop().getId())).orElse(true);
+    }
+
     /** Removes a line; returns {@code false} when the cart has no line with that id. */
     public boolean remove(long itemId) {
         return items.removeIf(item -> Objects.equals(item.getId(), itemId));

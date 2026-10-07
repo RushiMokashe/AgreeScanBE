@@ -3,6 +3,7 @@ package com.myagree.app.store;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -106,12 +107,31 @@ class CartApiTest {
 
     @Test
     void orderMessageUsesIndianDigitGrouping() throws Exception {
-        addToCart(productId("TOOLS"), 50).andExpect(status().isOk());
+        addToCart(productId("TOOLS"), 50, true).andExpect(status().isOk());
 
         mvc.perform(checkout())
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.total").value(108230))
-                .andExpect(jsonPath("$.message", endsWith(" placed • ₹1,08,230 • Cash on Delivery")));
+                .andExpect(jsonPath("$.total").value(107500))
+                .andExpect(jsonPath("$.message", endsWith(" placed • ₹1,07,500 • Cash on Delivery")));
+    }
+
+    /** The demo cart holds the depot's products; tools come from the Karmala shop, which a farmer pays separately. */
+    @Test
+    void aCartHoldsOneShopsProductsUnlessTheFarmerReplacesThem() throws Exception {
+        mvc.perform(get("/api/cart").with(users.demoFarmer()))
+                .andExpect(jsonPath("$.shopName").value("Solapur Mandi Agro Depot"));
+
+        addToCart(productId("TOOLS"), 1)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value(
+                        "Your cart has products from Solapur Mandi Agro Depot. Empty it to buy from Karmala Krishi Seva Kendra."));
+
+        long sprayer = productId("TOOLS");
+        addToCart(sprayer, 1, true)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items", hasSize(1)))
+                .andExpect(jsonPath("$.items[0].productId").value(sprayer))
+                .andExpect(jsonPath("$.shopName").value("Karmala Krishi Seva Kendra"));
     }
 
     @Test
@@ -200,9 +220,14 @@ class CartApiTest {
     }
 
     private ResultActions addToCart(long productId, int quantity) throws Exception {
+        return addToCart(productId, quantity, false);
+    }
+
+    private ResultActions addToCart(long productId, int quantity, boolean replaceCart) throws Exception {
         return mvc.perform(post("/api/cart/items")
                 .with(users.demoFarmer())
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"productId\": %d, \"quantity\": %d}".formatted(productId, quantity)));
+                .content("{\"productId\": %d, \"quantity\": %d, \"replaceCart\": %s}".formatted(productId, quantity,
+                        replaceCart)));
     }
 }

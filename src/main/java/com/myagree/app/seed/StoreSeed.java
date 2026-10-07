@@ -6,6 +6,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Component;
 
+import com.myagree.app.account.Account;
 import com.myagree.app.common.Tone;
 import com.myagree.app.common.i18n.LocalizedText;
 import com.myagree.app.store.Cart;
@@ -13,6 +14,9 @@ import com.myagree.app.store.CartRepository;
 import com.myagree.app.store.Product;
 import com.myagree.app.store.ProductCategory;
 import com.myagree.app.store.ProductRepository;
+import com.myagree.app.store.Shop;
+import com.myagree.app.store.ShopService;
+import com.myagree.app.store.dto.ShopProfileRequest;
 import com.myagree.app.store.StoreCategory;
 import com.myagree.app.store.StoreCategoryRepository;
 import com.myagree.app.store.StoreDepot;
@@ -32,6 +36,8 @@ public class StoreSeed implements DemoSeed {
 
     public static final SeedKey<Catalog> CATALOG = SeedKey.named("store catalog");
 
+    /** A UPI handle no UPI app knows: demo shops can show a real-looking QR that can never take real money. */
+    private static final String DEMO_UPI_HANDLE = "@agriscandemo";
     private static final Duration FLASH_DEAL_TIME_LEFT = Duration.ofHours(8).plusMinutes(42).plusSeconds(15);
     private static final String MANCOZEB_IMAGE = "/images/products/mancozeb-indofil-m45.jpg";
     private static final LocalizedText IN_STOCK = text("In Stock", "स्टॉकमध्ये", "स्टॉक में");
@@ -42,14 +48,16 @@ public class StoreSeed implements DemoSeed {
     private final StoreCategoryRepository categoryRepository;
     private final StoreDepotRepository depotRepository;
     private final CartRepository cartRepository;
+    private final ShopService shopService;
     private final Clock clock;
 
     StoreSeed(ProductRepository productRepository, StoreCategoryRepository categoryRepository,
-              StoreDepotRepository depotRepository, CartRepository cartRepository, Clock clock) {
+              StoreDepotRepository depotRepository, CartRepository cartRepository, ShopService shopService, Clock clock) {
         this.productRepository = productRepository;
         this.categoryRepository = categoryRepository;
         this.depotRepository = depotRepository;
         this.cartRepository = cartRepository;
+        this.shopService = shopService;
         this.clock = clock;
     }
 
@@ -64,7 +72,10 @@ public class StoreSeed implements DemoSeed {
                 text("24h Express", "24 तासांत डिलिव्हरी", "24 घंटे में डिलीवरी"),
                 clock.instant().plus(FLASH_DEAL_TIME_LEFT)));
         categoryRepository.saveAll(departments());
-        Catalog catalog = seedProducts();
+        AccountSeed.DemoAccounts accounts = context.get(AccountSeed.ACCOUNTS);
+        Shop depot = shop(accounts.sanjayKulkarni(), "Solapur Mandi Agro Depot", "Solapur", "solapur.agro");
+        Shop karmala = shop(accounts.maheshJadhav(), "Karmala Krishi Seva Kendra", "Karmala, Solapur", "karmala.krishi");
+        Catalog catalog = seedProducts(depot, karmala);
         Cart cart = new Cart(context.get(FarmerSeed.FARMERS).rishikesh().getId());
         cart.add(catalog.mancozeb(), 1);
         cart.add(catalog.mineralMix(), 1);
@@ -96,19 +107,33 @@ public class StoreSeed implements DemoSeed {
                         "pets", text("Vet Verified", "पशुवैद्यांनी तपासलेले", "पशु चिकित्सक द्वारा जाँचा")));
     }
 
-    /** Saves the flash deals first, in the design's order, then the prescription products, then the rest. */
-    private Catalog seedProducts() {
-        Product mineralMix = mineralMix();
-        Product mancozeb = mancozeb();
-        Product rxBundle = blightRxBundle();
-        productRepository.saveAll(List.of(tomatoSeeds(), batterySprayer(), mineralMix, hexaconazole(), mancozeb, rxBundle,
-                imidacloprid(), neemOil(), btCottonSeeds(), wheatSeeds(), onionSeeds(), handSprayer(), dripKit(), secateurs(),
-                calciumSupplement(), cattleFeed()));
+    /**
+     * A demo shop with Scan & Pay set up. Its UPI ID uses a handle no UPI app knows, so its QR can never send real
+     * money to anyone; testers pay by entering any 12-digit UPI reference.
+     */
+    private Shop shop(Account shopkeeper, String name, String place, String upiName) {
+        Shop shop = shopService.open(shopkeeper.id(), name, place, shopkeeper.phone());
+        shopService.updateProfile(shop.getId(), new ShopProfileRequest(name, place, upiName + DEMO_UPI_HANDLE));
+        return shop;
+    }
+
+    /**
+     * Saves the flash deals first, in the design's order, then the prescription products, then the rest. The depot
+     * sells crop medicines, seeds and cattle care; the Karmala shop sells tools and sprayers.
+     */
+    private Catalog seedProducts(Shop depot, Shop karmala) {
+        Product mineralMix = mineralMix(depot);
+        Product mancozeb = mancozeb(depot);
+        Product rxBundle = blightRxBundle(depot);
+        productRepository.saveAll(List.of(tomatoSeeds(depot), batterySprayer(karmala), mineralMix, hexaconazole(depot),
+                mancozeb, rxBundle, imidacloprid(depot), neemOil(depot), btCottonSeeds(depot), wheatSeeds(depot),
+                onionSeeds(depot), handSprayer(karmala), dripKit(karmala), secateurs(karmala), calciumSupplement(depot),
+                cattleFeed(depot)));
         return new Catalog(mancozeb, mineralMix, rxBundle);
     }
 
-    private static Product tomatoSeeds() {
-        return Product.builder(
+    private static Product tomatoSeeds(Shop shop) {
+        return Product.builder(shop,
                         text("Syngenta Abhinav Tomato Seeds", "सिंजेंटा अभिनव टोमॅटो बियाणे", "सिंजेंटा अभिनव टमाटर बीज"),
                         text("Syngenta Abhinav Seeds", "सिंजेंटा अभिनव बियाणे", "सिंजेंटा अभिनव बीज"), ProductCategory.SEEDS)
                 .tag(text("Blight Tolerant", "करपा सहनशील", "झुलसा सहनशील"), Tone.SUCCESS)
@@ -125,8 +150,8 @@ public class StoreSeed implements DemoSeed {
                 .build();
     }
 
-    private static Product batterySprayer() {
-        return Product.builder(
+    private static Product batterySprayer(Shop shop) {
+        return Product.builder(shop,
                         text("Kisan Shakti 16L Battery Sprayer", "किसान शक्ती 16 लि. बॅटरी स्प्रेयर", "किसान शक्ति 16 ली. बैटरी स्प्रेयर"),
                         text("Kisan Shakti 16L Sprayer", "किसान शक्ती 16 लि. स्प्रेयर", "किसान शक्ति 16 ली. स्प्रेयर"),
                         ProductCategory.TOOLS)
@@ -143,8 +168,8 @@ public class StoreSeed implements DemoSeed {
                 .build();
     }
 
-    private static Product mineralMix() {
-        return Product.builder(
+    private static Product mineralMix(Shop shop) {
+        return Product.builder(shop,
                         text("Doodh Dhara Cattle Mineral Mix", "दूध धारा पशु खनिज मिश्रण", "दूध धारा पशु खनिज मिश्रण"),
                         text("Doodh Dhara 5kg", "दूध धारा 5 किलो", "दूध धारा 5 किलो"), ProductCategory.DAIRY)
                 .tag(text("दूध उत्पादन वर्धक", "दूध उत्पादन वाढवते", "दूध उत्पादन वर्धक"), Tone.WARNING)
@@ -162,8 +187,8 @@ public class StoreSeed implements DemoSeed {
                 .build();
     }
 
-    private static Product hexaconazole() {
-        return Product.builder(
+    private static Product hexaconazole(Shop shop) {
+        return Product.builder(shop,
                         text("Tata Contaf Plus (Hexaconazole 5% SC)", "टाटा कॉन्टाफ प्लस (हेक्साकोनाझोल 5% SC)",
                                 "टाटा कॉन्टाफ प्लस (हेक्साकोनाज़ोल 5% SC)"),
                         text("Tata Contaf Plus 500ml", "टाटा कॉन्टाफ प्लस 500 मि.लि.", "टाटा कॉन्टाफ प्लस 500 मि.ली."),
@@ -182,8 +207,8 @@ public class StoreSeed implements DemoSeed {
                 .build();
     }
 
-    private static Product mancozeb() {
-        return Product.builder(
+    private static Product mancozeb(Shop shop) {
+        return Product.builder(shop,
                         text("Indofil M-45 Mancozeb 75% WP", "इंडोफिल M-45 मॅन्कोझेब 75% WP", "इंडोफिल M-45 मैन्कोज़ेब 75% WP"),
                         text("Mancozeb 500g", "मॅन्कोझेब 500 ग्रॅम", "मैन्कोज़ेब 500 ग्राम"), ProductCategory.CROP_MEDICINE)
                 .tag(text("Contact Fungicide", "स्पर्शजन्य बुरशीनाशक", "संपर्क फफूंदनाशी"), Tone.NEUTRAL)
@@ -199,8 +224,8 @@ public class StoreSeed implements DemoSeed {
                 .build();
     }
 
-    private static Product blightRxBundle() {
-        return Product.builder(
+    private static Product blightRxBundle(Shop shop) {
+        return Product.builder(shop,
                         text("Mancozeb 75% WP + Nozzle Kit", "मॅन्कोझेब 75% WP + नोझल किट", "मैन्कोज़ेब 75% WP + नोज़ल किट"),
                         text("Plot A Blight Rx Bundle", "प्लॉट A करपा उपचार संच", "प्लॉट A झुलसा उपचार बंडल"),
                         ProductCategory.CROP_MEDICINE)
@@ -218,8 +243,8 @@ public class StoreSeed implements DemoSeed {
                 .build();
     }
 
-    private static Product imidacloprid() {
-        return Product.builder(
+    private static Product imidacloprid(Shop shop) {
+        return Product.builder(shop,
                         text("Bayer Confidor (Imidacloprid 17.8% SL)", "बायर कॉन्फिडॉर (इमिडाक्लोप्रिड 17.8% SL)",
                                 "बायर कॉन्फिडोर (इमिडाक्लोप्रिड 17.8% SL)"),
                         text("Confidor 100ml", "कॉन्फिडॉर 100 मि.लि.", "कॉन्फिडोर 100 मि.ली."), ProductCategory.CROP_MEDICINE)
@@ -236,8 +261,8 @@ public class StoreSeed implements DemoSeed {
                 .build();
     }
 
-    private static Product neemOil() {
-        return Product.builder(
+    private static Product neemOil(Shop shop) {
+        return Product.builder(shop,
                         text("Neem Oil 10000 PPM Bio-Pesticide", "निंबोळी तेल 10000 PPM जैविक कीटकनाशक",
                                 "नीम तेल 10000 PPM जैविक कीटनाशक"),
                         text("Neem Oil 1L", "निंबोळी तेल 1 लि.", "नीम तेल 1 ली."), ProductCategory.CROP_MEDICINE)
@@ -254,8 +279,8 @@ public class StoreSeed implements DemoSeed {
                 .build();
     }
 
-    private static Product btCottonSeeds() {
-        return Product.builder(
+    private static Product btCottonSeeds(Shop shop) {
+        return Product.builder(shop,
                         text("Mahyco Bt Cotton Seeds (MRC 7351)", "महिको बीटी कापूस बियाणे (MRC 7351)",
                                 "महिको बीटी कपास बीज (MRC 7351)"),
                         text("Bt Cotton 450g", "बीटी कापूस 450 ग्रॅम", "बीटी कपास 450 ग्राम"), ProductCategory.SEEDS)
@@ -270,8 +295,8 @@ public class StoreSeed implements DemoSeed {
                 .build();
     }
 
-    private static Product wheatSeeds() {
-        return Product.builder(
+    private static Product wheatSeeds(Shop shop) {
+        return Product.builder(shop,
                         text("HD-2967 Wheat Seeds (Certified)", "HD-2967 गहू बियाणे (प्रमाणित)", "HD-2967 गेहूँ बीज (प्रमाणित)"),
                         text("HD-2967 Wheat 40kg", "HD-2967 गहू 40 किलो", "HD-2967 गेहूँ 40 किलो"), ProductCategory.SEEDS)
                 .tag(text("ICAR Certified", "ICAR प्रमाणित", "ICAR प्रमाणित"), Tone.SUCCESS)
@@ -286,8 +311,8 @@ public class StoreSeed implements DemoSeed {
                 .build();
     }
 
-    private static Product onionSeeds() {
-        return Product.builder(
+    private static Product onionSeeds(Shop shop) {
+        return Product.builder(shop,
                         text("Onion Seeds N-53 (Red)", "कांदा बियाणे N-53 (लाल)", "प्याज़ बीज N-53 (लाल)"),
                         text("Onion N-53 500g", "कांदा N-53 500 ग्रॅम", "प्याज़ N-53 500 ग्राम"), ProductCategory.SEEDS)
                 .tag(text("Kharif Onion", "खरीप कांदा", "खरीफ़ प्याज़"), Tone.NEUTRAL)
@@ -302,8 +327,8 @@ public class StoreSeed implements DemoSeed {
                 .build();
     }
 
-    private static Product handSprayer() {
-        return Product.builder(
+    private static Product handSprayer(Shop shop) {
+        return Product.builder(shop,
                         text("Knapsack Hand Sprayer 16L", "पाठीवरचा हात पंप 16 लि.", "पीठ पर टाँगने वाला हैंड स्प्रेयर 16 ली."),
                         text("Hand Sprayer 16L", "हात पंप 16 लि.", "हैंड स्प्रेयर 16 ली."), ProductCategory.TOOLS)
                 .tag(text("Heavy Duty", "मजबूत", "मज़बूत"), Tone.NEUTRAL)
@@ -316,8 +341,8 @@ public class StoreSeed implements DemoSeed {
                 .build();
     }
 
-    private static Product dripKit() {
-        return Product.builder(
+    private static Product dripKit(Shop shop) {
+        return Product.builder(shop,
                         text("Drip Irrigation Kit (1 Acre)", "ठिबक सिंचन किट (1 एकर)", "ड्रिप सिंचाई किट (1 एकड़)"),
                         text("Drip Kit 1 Acre", "ठिबक किट 1 एकर", "ड्रिप किट 1 एकड़"), ProductCategory.TOOLS)
                 .tag(text("Water Saver", "पाण्याची बचत", "पानी की बचत"), Tone.SUCCESS)
@@ -332,8 +357,8 @@ public class StoreSeed implements DemoSeed {
     }
 
     /** Sold out: listed, but it cannot be added to a cart until the depot restocks it. */
-    private static Product secateurs() {
-        return Product.builder(
+    private static Product secateurs(Shop shop) {
+        return Product.builder(shop,
                         text("Pruning Secateurs (Steel)", "छाटणी कात्री (स्टील)", "कटाई कैंची (स्टील)"),
                         text("Secateurs", "छाटणी कात्री", "कटाई कैंची"), ProductCategory.TOOLS)
                 .description(text("Rust-proof blades for grapes, pomegranate & roses",
@@ -346,8 +371,8 @@ public class StoreSeed implements DemoSeed {
                 .build();
     }
 
-    private static Product calciumSupplement() {
-        return Product.builder(
+    private static Product calciumSupplement(Shop shop) {
+        return Product.builder(shop,
                         text("Calcium Liquid Supplement for Cattle", "जनावरांसाठी द्रव कॅल्शियम", "पशुओं के लिए तरल कैल्शियम"),
                         text("Calcium Gel 1L", "कॅल्शियम जेल 1 लि.", "कैल्शियम जेल 1 ली."), ProductCategory.DAIRY)
                 .tag(text("Vet Recommended", "पशुवैद्यांची शिफारस", "पशु चिकित्सक की सलाह"), Tone.SUCCESS)
@@ -361,8 +386,8 @@ public class StoreSeed implements DemoSeed {
                 .build();
     }
 
-    private static Product cattleFeed() {
-        return Product.builder(
+    private static Product cattleFeed(Shop shop) {
+        return Product.builder(shop,
                         text("Cattle Feed Pellets (Sugras)", "पशुखाद्य गोळ्या (सुग्रास)", "पशु आहार पेलेट (सुग्रास)"),
                         text("Cattle Feed 50kg", "पशुखाद्य 50 किलो", "पशु आहार 50 किलो"), ProductCategory.DAIRY)
                 .tag(text("High Protein", "जास्त प्रथिने", "ज़्यादा प्रोटीन"), Tone.NEUTRAL)

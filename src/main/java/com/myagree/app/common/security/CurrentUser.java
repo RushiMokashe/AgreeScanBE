@@ -17,6 +17,7 @@ import com.myagree.app.common.i18n.UserMessage;
  * @param roles             what the user may do
  * @param farmerId          the user's farmer profile, if any
  * @param ownerId           the user's vehicle-owner profile, if any
+ * @param shopId            the shop the user keeps, if any
  * @param preferredLanguage the account's preferred language when the token was issued (the request's language
  *                          comes from {@code Accept-Language} instead)
  */
@@ -26,10 +27,12 @@ public record CurrentUser(
         Set<Role> roles,
         @Nullable Long farmerId,
         @Nullable Long ownerId,
+        @Nullable Long shopId,
         Language preferredLanguage) {
 
     private static final UserMessage NO_FARMER_PROFILE = UserMessage.of("common.account.no-farmer-profile");
     private static final UserMessage NO_OWNER_PROFILE = UserMessage.of("common.account.no-owner-profile");
+    private static final UserMessage NO_SHOP = UserMessage.of("common.account.no-shop");
 
     public CurrentUser {
         roles = Set.copyOf(roles);
@@ -57,5 +60,17 @@ public record CurrentUser(
             throw new ForbiddenException(NO_OWNER_PROFILE);
         }
         return ownerId;
+    }
+
+    /**
+     * The shop that shopkeeper-portal data is scoped to.
+     *
+     * @throws ForbiddenException when the account keeps no shop
+     */
+    public long requireShopId() {
+        if (shopId == null) {
+            throw new ForbiddenException(NO_SHOP);
+        }
+        return shopId;
     }
 }

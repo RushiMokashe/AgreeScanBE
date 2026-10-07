@@ -7,15 +7,19 @@ import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 
 import org.hibernate.annotations.EmbeddedColumnNaming;
 import org.jspecify.annotations.Nullable;
 
 import com.myagree.app.common.Tone;
 import com.myagree.app.common.i18n.LocalizedText;
+import com.myagree.app.common.media.StoredPhoto;
 
 /**
  * An item sold by the agro depot, together with the texts its catalogue card shows in English, Marathi and Hindi.
@@ -25,12 +29,23 @@ import com.myagree.app.common.i18n.LocalizedText;
 @Entity
 public class Product {
 
-    /** Highest price or MRP the admin portal accepts, in rupees. */
+    /** Highest price or MRP the admin and shop portals accept, in rupees. */
     public static final int MAX_PRICE = 1_000_000;
+
+    /** What a product a shopkeeper lists shows under its price and at its foot (seeded products have their own). */
+    private static final LocalizedText LISTED_STOCK_NOTE = LocalizedText.of("In Stock", "स्टॉकमध्ये", "स्टॉक में");
+    private static final String LISTED_FOOTER_ICON = "payments";
+    private static final LocalizedText LISTED_FOOTER = LocalizedText.of("Cash on delivery or pay online",
+            "डिलिव्हरीवेळी रोख किंवा ऑनलाइन पेमेंट", "डिलीवरी पर नकद या ऑनलाइन भुगतान");
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    /** The shop that sells it. */
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "shop_id")
+    private Shop shop;
 
     @Embedded
     @EmbeddedColumnNaming("name_%s")
@@ -60,7 +75,13 @@ public class Product {
 
     private int price;
     private @Nullable Integer mrp;
+    /** A photo shipped with the app, e.g. "/images/products/..."; an uploaded photo replaces it. */
     private @Nullable String imageUrl;
+
+    /** The shopkeeper's uploaded photo, served through a signed media URL. */
+    @Embedded
+    private @Nullable StoredPhoto photo;
+
     private @Nullable Double rating;
 
     @Embedded
@@ -96,8 +117,38 @@ public class Product {
     protected Product() {
     }
 
-    public static Builder builder(LocalizedText name, LocalizedText shortName, ProductCategory category) {
-        return new Builder(name, shortName, category);
+    public static Builder builder(Shop shop, LocalizedText name, LocalizedText shortName, ProductCategory category) {
+        return new Builder(shop, name, shortName, category);
+    }
+
+    /** A product a shopkeeper lists from the shop portal; its stock note and footer are the standard ones. */
+    static Product listedBy(Shop shop, ShopListing listing) {
+        Product product = new Product();
+        product.shop = shop;
+        product.stockNote = LISTED_STOCK_NOTE;
+        product.stockTone = Tone.SUCCESS;
+        product.footerIcon = LISTED_FOOTER_ICON;
+        product.footerText = LISTED_FOOTER;
+        product.updateListing(listing);
+        return product;
+    }
+
+    /** Applies what the shopkeeper entered; the short name follows the name. */
+    void updateListing(ShopListing listing) {
+        this.name = listing.name();
+        this.shortName = listing.name();
+        this.category = listing.category();
+        this.packSize = listing.packSize();
+        this.description = listing.description();
+        this.price = listing.price();
+        this.mrp = listing.mrp();
+        this.inStock = listing.inStock();
+        this.barcode = listing.barcode();
+    }
+
+    /** Shows the shopkeeper's photo instead of the one shipped with the app. */
+    void replacePhoto(StoredPhoto photo) {
+        this.photo = photo;
     }
 
     /** Sets a new selling price and MRP; the admin service checks them against {@link #MAX_PRICE} and each other. */
@@ -117,6 +168,14 @@ public class Product {
 
     public Long getId() {
         return id;
+    }
+
+    public Shop getShop() {
+        return shop;
+    }
+
+    public @Nullable StoredPhoto getPhoto() {
+        return photo;
     }
 
     public LocalizedText getName() {
@@ -208,7 +267,8 @@ public class Product {
 
         private final Product product = new Product();
 
-        private Builder(LocalizedText name, LocalizedText shortName, ProductCategory category) {
+        private Builder(Shop shop, LocalizedText name, LocalizedText shortName, ProductCategory category) {
+            product.shop = Objects.requireNonNull(shop, "shop");
             product.name = name;
             product.shortName = shortName;
             product.category = category;

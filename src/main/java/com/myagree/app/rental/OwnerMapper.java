@@ -22,10 +22,11 @@ class OwnerMapper {
         this.pictures = pictures;
     }
 
-    static VehicleOwnerProfileResponse toResponse(VehicleOwner owner, Language language) {
+    VehicleOwnerProfileResponse toResponse(VehicleOwner owner, Language language) {
         RentalHub hub = owner.getHub();
         return new VehicleOwnerProfileResponse(owner.getId(), owner.getUserId(), owner.getName(),
-                owner.getBusinessName(), owner.getPhone(), hub.getId(), hub.getName().resolve(language));
+                owner.getBusinessName(), owner.getPhone(), hub.getId(), hub.getName().resolve(language),
+                owner.getUpiId(), pictures.upiQrUrl(owner), owner.acceptsScanAndPay());
     }
 
     /** @param openBookings the vehicle's requested and accepted bookings */

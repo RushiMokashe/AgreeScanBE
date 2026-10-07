@@ -48,6 +48,18 @@ class BookingNotifications {
         send(recipient, transition.notification(), details(booking, recipient, reason), route);
     }
 
+    /** Asks the owner to check their bank for a Scan & Pay payment the farmer says they sent. */
+    void paymentToConfirm(RentalBooking booking, String upiReference) {
+        long ownerUserId = booking.getListing().getOwner().getUserId();
+        Language language = preferredLanguage(ownerUserId);
+        send(ownerUserId, NotificationType.PAYMENT_TO_CONFIRM, Map.of(
+                        Notifier.FARMER_NAME, booking.getFarmer().name(),
+                        Notifier.AMOUNT, String.valueOf(booking.getAmount()),
+                        Notifier.DESCRIPTION, bookingMapper.paymentDescription(booking, language),
+                        Notifier.UPI_REFERENCE, upiReference),
+                OWNER_ROUTE + booking.getId());
+    }
+
     /** Tells the owner that the farmer paid the booking online. */
     void paid(RentalBooking booking) {
         long ownerUserId = booking.getListing().getOwner().getUserId();

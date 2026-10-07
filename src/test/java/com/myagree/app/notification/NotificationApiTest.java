@@ -190,7 +190,7 @@ class NotificationApiTest {
     @Test
     void theStreamDeliversCommittedNotificationsInItsLanguageAndNeverRolledBackOnes() throws Exception {
         CurrentUser streamUser = new CurrentUser(STREAM_USER_ID, "Stream Tester", Set.of(Role.FARMER), null, null,
-                Language.EN);
+                null, Language.EN);
         MvcResult stream = mvc.perform(get(STREAM).with(users.signedInAs(streamUser))
                         .header(HttpHeaders.ACCEPT_LANGUAGE, "hi"))
                 .andExpect(request().asyncStarted())

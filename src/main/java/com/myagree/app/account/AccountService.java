@@ -210,6 +210,20 @@ public class AccountService {
         return AccountMapper.toAccount(user);
     }
 
+    /**
+     * Records the shop the store feature opened for this user; linking the same shop again is a no-op.
+     *
+     * @throws NotFoundException     when there is no such user
+     * @throws IllegalStateException when the user already keeps a different shop
+     */
+    @Transactional
+    public Account linkShop(long userId, long shopId) {
+        User user = findUser(userId);
+        requireUnlinkedOrSame(user.getShopId(), shopId, "shop", userId);
+        user.linkShop(shopId);
+        return AccountMapper.toAccount(user);
+    }
+
     private User findUser(long userId) {
         return userRepository.findById(userId).orElseThrow(() -> NotFoundException.of("User", userId));
     }

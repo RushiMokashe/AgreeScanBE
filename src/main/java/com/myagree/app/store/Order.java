@@ -25,7 +25,9 @@ import org.jspecify.annotations.Nullable;
  * as the depot's delivery contact, so later catalogue or profile changes do not rewrite history.
  */
 @Entity
-@Table(name = "orders", indexes = @Index(name = "orders_farmer", columnList = "farmer_id, placed_at"))
+@Table(name = "orders", indexes = {
+        @Index(name = "orders_farmer", columnList = "farmer_id, placed_at"),
+        @Index(name = "orders_shop", columnList = "shop_id, placed_at")})
 public class Order {
 
     @Id
@@ -34,6 +36,14 @@ public class Order {
 
     @Column(nullable = false)
     private long farmerId;
+
+    /** The shop selling it; a cart holds one shop's products. */
+    @Column(name = "shop_id", nullable = false)
+    private long shopId;
+
+    /** The shop's name when the order was placed, as the farmer saw it. */
+    @Column(nullable = false)
+    private String shopName;
 
     @Column(nullable = false)
     private String customerName;
@@ -75,8 +85,11 @@ public class Order {
      */
     public static Order placeFrom(Cart cart, String customerName, String customerPhone, PaymentMethod paymentMethod,
                                   Instant placedAt) {
+        Shop shop = cart.shop().orElseThrow(() -> new IllegalArgumentException("An empty cart cannot be ordered"));
         Order order = new Order();
         order.farmerId = cart.getFarmerId();
+        order.shopId = shop.getId();
+        order.shopName = shop.getName();
         order.customerName = customerName;
         order.customerPhone = customerPhone;
         order.paymentMethod = paymentMethod;
@@ -92,12 +105,39 @@ public class Order {
     }
 
     /**
-     * Records the online payment that paid the order.
+     * The farmer paid the shop by Scan & Pay: the order waits for the shopkeeper to confirm the money arrived.
+     *
+     * @return {@code false}, changing nothing, when the order was not waiting for a payment
+     */
+    boolean awaitPaymentConfirmation() {
+        if (status != OrderStatus.AWAITING_PAYMENT) {
+            return false;
+        }
+        this.status = OrderStatus.VERIFYING_PAYMENT;
+        return true;
+    }
+
+    /**
+     * The shopkeeper did not receive the Scan & Pay payment: the order waits for a payment again.
+     *
+     * @return {@code false}, changing nothing, when no payment was being verified
+     */
+    boolean paymentNotReceived() {
+        if (status != OrderStatus.VERIFYING_PAYMENT) {
+            return false;
+        }
+        this.status = OrderStatus.AWAITING_PAYMENT;
+        return true;
+    }
+
+    /**
+     * Records the online payment that paid the order: a card or UPI payment, or a Scan & Pay payment the shopkeeper
+     * confirmed.
      *
      * @return {@code false}, changing nothing, when the order was not waiting for a payment
      */
     boolean markPaid(long paymentId, Instant paidAt) {
-        if (status != OrderStatus.AWAITING_PAYMENT) {
+        if (status != OrderStatus.AWAITING_PAYMENT && status != OrderStatus.VERIFYING_PAYMENT) {
             return false;
         }
         this.status = OrderStatus.PAID;
@@ -112,6 +152,14 @@ public class Order {
 
     public long getFarmerId() {
         return farmerId;
+    }
+
+    public long getShopId() {
+        return shopId;
+    }
+
+    public String getShopName() {
+        return shopName;
     }
 
     public String getCustomerName() {

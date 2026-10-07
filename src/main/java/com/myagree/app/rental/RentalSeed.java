@@ -77,6 +77,10 @@ class RentalSeed implements DemoSeed {
         VehicleOwner vinod = owner(accounts.vinodShinde(), null, solapur);
         VehicleOwner balwant = owner(accounts.balwantTransportFleet(), "Balwant Transport Fleet", solapur);
         VehicleOwner agriscanLogistics = owner(accounts.agriscanLogistics(), "AgriScan Logistics", solapur);
+        // Scan & Pay for their bookings, under a UPI handle no UPI app knows: the QR can never take real money
+        rameshwar.changeUpiId("rameshwar.patil@agriscandemo");
+        vinod.changeUpiId("vinod.shinde@agriscandemo");
+        ownerRepository.saveAll(List.of(rameshwar, vinod));
 
         RentalListing boleroPickup = listingRepository.save(boleroPickup(agriscanLogistics, solapur));
         spotlightRepository.save(new RentalSpotlight(boleroPickup,

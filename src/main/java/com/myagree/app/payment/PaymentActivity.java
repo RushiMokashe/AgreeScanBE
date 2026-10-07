@@ -47,14 +47,21 @@ record PaymentActivity(
         /** The app confirmed with the provider after the farmer paid. */
         CONFIRMATION,
         /** The provider's webhook. */
-        WEBHOOK
+        WEBHOOK,
+        /** The shopkeeper or vehicle owner, confirming or rejecting a Scan & Pay payment. */
+        SELLER
     }
 
     /** {@code payment} as it is right after {@code type} happened. */
     static PaymentActivity of(Payment payment, Type type, Source source, Instant at) {
         return new PaymentActivity(payment.getId(), type, source, payment.getPurpose(), payment.getReferenceId(),
                 payment.getFarmerId(), payment.getAmountRupees(), payment.getProvider(), payment.getProviderReference(),
-                type == Type.FAILED ? payment.getFailureReason() : null, at);
+                type == Type.FAILED ? blankToNull(payment.getFailureReason()) : null, at);
+    }
+
+    /** A seller may reject a Scan & Pay payment without a reason; the log leaves the field out rather than empty. */
+    private static @Nullable String blankToNull(@Nullable String text) {
+        return text == null || text.isBlank() ? null : text;
     }
 
     /** The document stored in MongoDB; optional fields are left out rather than stored as null. */

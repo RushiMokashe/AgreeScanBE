@@ -5,10 +5,12 @@ package com.myagree.app.common.security;
  * Lives with the security rules that enforce it, so {@code common} does not depend on the account feature.
  */
 public enum Role {
-    /** The farmer app: everything under {@code /api/**} except the admin and owner portals. */
+    /** The farmer app: everything under {@code /api/**} except the admin, owner and shop portals. */
     FARMER,
     /** The vehicle-owner portal under {@code /api/owner/**}. */
     VEHICLE_OWNER,
+    /** The shopkeeper portal under {@code /api/shop/**}: the shop's products, orders and Scan & Pay details. */
+    SHOPKEEPER,
     /** The admin portal under {@code /api/admin/**}. */
     ADMIN
 }

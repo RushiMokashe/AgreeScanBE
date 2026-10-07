@@ -33,6 +33,7 @@
 		<okhttp.version>4.12.0</okhttp.version>
 		<razorpay-java.version>1.4.10</razorpay-java.version>
 		<stripe-java.version>33.4.2</stripe-java.version>
+		<zxing.version>3.5.3</zxing.version>
 		<!-- Parallel builds of the same checkout use their own output: mvnw -Dagriscan.build.dir=target-<name> ... -->
 		<agriscan.build.dir>${project.basedir}/target</agriscan.build.dir>
 	</properties>
@@ -106,6 +107,12 @@
 			<groupId>com.stripe</groupId>
 			<artifactId>stripe-java</artifactId>
 			<version>${stripe-java.version}</version>
+		</dependency>
+		<!-- Scan & Pay: the UPI QR code with the amount filled in -->
+		<dependency>
+			<groupId>com.google.zxing</groupId>
+			<artifactId>core</artifactId>
+			<version>${zxing.version}</version>
 		</dependency>
 
 		<dependency>

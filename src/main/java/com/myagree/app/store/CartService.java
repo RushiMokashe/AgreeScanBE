@@ -29,6 +29,7 @@ public class CartService {
     private static final String OUT_OF_STOCK = "store.product.out-of-stock";
     private static final String ITEM_NOT_FOUND = "store.cart.item-not-found";
     private static final String UNAVAILABLE = "store.cart.unavailable";
+    private static final String OTHER_SHOP = "store.cart.other-shop";
     private static final UserMessage EMPTY_CART = UserMessage.of("store.cart.empty");
     private static final String NAME_SEPARATOR = ", ";
 
@@ -58,19 +59,29 @@ public class CartService {
     }
 
     /**
-     * Adds {@code quantity} units of a product, merging into the existing line for that product.
+     * Adds {@code quantity} units of a product, merging into the existing line for that product. A cart holds one
+     * shop's products, since a farmer may pay the shop directly: a product of another shop replaces the cart's
+     * contents only when {@code replaceCart} says the farmer agreed.
      *
      * @throws NotFoundException when there is no such product
-     * @throws ConflictException when the depot has run out of it
+     * @throws ConflictException when the shop has run out of it, or the cart holds another shop's products
      */
     @Transactional
-    public CartResponse addItem(long productId, int quantity, Language language) {
+    public CartResponse addItem(long productId, int quantity, boolean replaceCart, Language language) {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new NotFoundException(UserMessage.of(PRODUCT_NOT_FOUND, String.valueOf(productId))));
         if (!product.isInStock()) {
             throw new ConflictException(UserMessage.of(OUT_OF_STOCK, product.getShortName().resolve(language)));
         }
         Cart cart = findCart().orElseGet(() -> cartRepository.save(new Cart(currentFarmerId())));
+        if (!cart.accepts(product)) {
+            if (!replaceCart) {
+                String cartShop = cart.shop().map(Shop::getName).orElseThrow();
+                throw new ConflictException(UserMessage.of(OTHER_SHOP, cartShop, product.getShop().getName()));
+            }
+            cart.clear();
+            cartRepository.flush(); // removes the old lines before a line for the same product could be added again
+        }
         cart.add(product, quantity);
         cartRepository.flush(); // assigns ids to new lines before they are returned to the client
         return mapper.toResponse(cart, language);

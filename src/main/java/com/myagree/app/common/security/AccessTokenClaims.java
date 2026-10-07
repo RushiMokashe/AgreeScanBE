@@ -20,6 +20,7 @@ final class AccessTokenClaims {
     private static final String NAME = "name";
     private static final String FARMER_ID = "fid";
     private static final String OWNER_ID = "oid";
+    private static final String SHOP_ID = "sid";
     private static final String LANGUAGE = "lang";
 
     private AccessTokenClaims() {
@@ -40,6 +41,9 @@ final class AccessTokenClaims {
         if (user.ownerId() != null) {
             claims.claim(OWNER_ID, user.ownerId());
         }
+        if (user.shopId() != null) {
+            claims.claim(SHOP_ID, user.shopId());
+        }
         return claims.build();
     }
 
@@ -51,6 +55,7 @@ final class AccessTokenClaims {
                 roles,
                 idClaim(token, FARMER_ID),
                 idClaim(token, OWNER_ID),
+                idClaim(token, SHOP_ID),
                 Language.fromCode(token.getClaimAsString(LANGUAGE)));
     }
 
