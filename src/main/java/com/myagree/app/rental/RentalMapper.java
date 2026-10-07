@@ -1,9 +1,18 @@
 package com.myagree.app.rental;
 
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
-import com.myagree.app.rental.dto.RentalBookingResponse;
+import org.jspecify.annotations.Nullable;
+import org.springframework.stereotype.Component;
+
+import com.myagree.app.common.i18n.Language;
+import com.myagree.app.common.i18n.LocalizedText;
+import com.myagree.app.common.i18n.Messages;
+import com.myagree.app.rental.dto.AdminRentalListingResponse;
 import com.myagree.app.rental.dto.RentalFeatureResponse;
+import com.myagree.app.rental.dto.RentalHubOptionResponse;
 import com.myagree.app.rental.dto.RentalListingResponse;
 import com.myagree.app.rental.dto.RentalOperatorResponse;
 import com.myagree.app.rental.dto.RentalPerkResponse;
@@ -11,77 +20,131 @@ import com.myagree.app.rental.dto.RentalSpecResponse;
 import com.myagree.app.rental.dto.RentalSpotlightResponse;
 import com.myagree.app.rental.dto.RentalsOverviewResponse;
 
-final class RentalMapper {
+/**
+ * Shows hubs and listings to farmers and admins in the reader's language. A card AgriScan has not curated falls back
+ * to defaults: the call button names the owner, the book button follows the category, and a new owner's track record
+ * reads "New on AgriScan".
+ */
+@Component
+class RentalMapper {
 
-    private static final String BOOKING_CONFIRMED_MESSAGE = "Booked! %s will call you shortly to confirm.";
+    private static final String CALL_LABEL = "rental.listing.call";
+    private static final String BOOK_LABEL_PREFIX = "rental.listing.book.";
+    private static final String NEW_OPERATOR = "rental.listing.new-operator";
 
-    private RentalMapper() {
+    private final Messages messages;
+    private final ListingPictures pictures;
+
+    RentalMapper(Messages messages, ListingPictures pictures) {
+        this.messages = messages;
+        this.pictures = pictures;
     }
 
-    static RentalsOverviewResponse toOverview(RentalHub hub, RentalSpotlight spotlight, List<RentalListing> listings) {
+    RentalHubOptionResponse toOption(RentalHub hub, Language language) {
+        return new RentalHubOptionResponse(hub.getId(), hub.getName().resolve(language), hub.getRadiusKm(),
+                hub.getRoutes().resolve(language));
+    }
+
+    /**
+     * @param spotlight the hub's spotlight offer, whose listing is left out of {@code listings} by the caller
+     * @param favorites the ids of the listings the farmer saved
+     */
+    RentalsOverviewResponse toOverview(RentalHub hub, @Nullable RentalSpotlight spotlight, List<RentalListing> listings,
+                                       Set<Long> favorites, Language language) {
+        long onlineCount = listings.size() + (spotlight != null ? 1 : 0);
         return new RentalsOverviewResponse(
-                hub.getName(),
+                hub.getId(),
+                hub.getName().resolve(language),
                 hub.getRadiusKm(),
-                hub.getRoutes(),
-                hub.getOnlineCount(),
-                toResponse(spotlight),
-                listings.stream().map(RentalMapper::toResponse).toList());
+                hub.getRoutes().resolve(language),
+                onlineCount,
+                spotlight != null ? toResponse(spotlight, language) : null,
+                listings.stream().map(listing -> toResponse(listing, favorites.contains(listing.getId()), language))
+                        .toList());
     }
 
-    static RentalListingResponse toResponse(RentalListing listing) {
-        RentalOperator operator = listing.getOperator();
+    RentalListingResponse toResponse(RentalListing listing, boolean favorite, Language language) {
+        VehicleOwner owner = listing.getOwner();
         return new RentalListingResponse(
                 listing.getId(),
                 listing.getCategory(),
-                listing.getName(),
-                listing.getDescription(),
-                listing.getImageUrl(),
-                listing.getIcon(),
-                listing.getBadge(),
+                listing.getName().resolve(language),
+                listing.getDescription().resolve(language),
+                pictures.imageUrl(listing),
+                pictures.icon(listing),
+                resolve(listing.getBadge(), language),
                 listing.getBadgeIcon(),
                 listing.getDistanceKm(),
-                listing.getLocality(),
+                resolve(listing.getLocality(), language),
                 listing.getRate(),
                 listing.getRateUnit(),
-                listing.getRateNote(),
+                resolve(listing.getRateNote(), language),
                 listing.isRateNoteHighlighted(),
-                new RentalOperatorResponse(operator.name(), operator.initials(), operator.stats()),
-                listing.getAvailability(),
+                new RentalOperatorResponse(owner.getName(), owner.initials(), operatorStats(listing, language)),
+                listing.getAvailability().resolve(language),
                 listing.isAvailabilityHighlighted(),
-                listing.getSpecs().stream().map(spec -> new RentalSpecResponse(spec.value(), spec.label())).toList(),
-                listing.getFeatures().stream().map(feature -> new RentalFeatureResponse(feature.icon(), feature.text())).toList(),
-                listing.getPhone(),
-                listing.getCallLabel(),
-                listing.getBookLabel(),
-                listing.getBookIcon(),
-                listing.isFavorite());
+                listing.getSpecs().stream()
+                        .map(spec -> new RentalSpecResponse(spec.value().resolve(language), spec.label().resolve(language)))
+                        .toList(),
+                listing.getFeatures().stream()
+                        .map(feature -> new RentalFeatureResponse(feature.icon(), feature.text().resolve(language)))
+                        .toList(),
+                owner.dialablePhone(),
+                callLabel(listing, language),
+                bookLabel(listing, language),
+                Objects.requireNonNullElse(listing.getBookIcon(), listing.getCategory().defaultBookIcon()),
+                favorite);
     }
 
-    static RentalBookingResponse toResponse(RentalBooking booking) {
-        RentalListing listing = booking.getListing();
-        return new RentalBookingResponse(
-                booking.getId(),
+    AdminRentalListingResponse toAdminResponse(RentalListing listing, Language language) {
+        VehicleOwner owner = listing.getOwner();
+        return new AdminRentalListingResponse(
                 listing.getId(),
-                listing.getName(),
-                booking.getStatus(),
-                booking.getSlotLabel(),
-                booking.getCreatedAt(),
-                BOOKING_CONFIRMED_MESSAGE.formatted(listing.getOperator().name()));
+                listing.getName().resolve(language),
+                listing.getCategory(),
+                listing.getHub().getName().resolve(language),
+                owner.getName(),
+                owner.getPhone(),
+                listing.getRate(),
+                listing.getRateUnit(),
+                listing.isOnline(),
+                pictures.imageUrl(listing),
+                pictures.icon(listing));
     }
 
-    private static RentalSpotlightResponse toResponse(RentalSpotlight spotlight) {
+    private RentalSpotlightResponse toResponse(RentalSpotlight spotlight, Language language) {
         RentalListing listing = spotlight.getListing();
         return new RentalSpotlightResponse(
                 listing.getId(),
-                listing.getName(),
-                listing.getDescription(),
-                spotlight.getLabel(),
+                listing.getName().resolve(language),
+                listing.getDescription().resolve(language),
+                spotlight.getLabel().resolve(language),
                 spotlight.getImageUrl(),
-                spotlight.getBaseFare(),
+                Objects.requireNonNullElse(listing.getBaseFare(), 0),
                 listing.getRate(),
                 spotlight.getDispatchMinutes(),
                 spotlight.getPerks().stream()
-                        .map(perk -> new RentalPerkResponse(perk.icon(), perk.title(), perk.subtitle()))
+                        .map(perk -> new RentalPerkResponse(
+                                perk.icon(), perk.title().resolve(language), perk.subtitle().resolve(language)))
                         .toList());
+    }
+
+    private String operatorStats(RentalListing listing, Language language) {
+        LocalizedText stats = listing.getOperatorStats();
+        return stats != null ? stats.resolve(language) : messages.get(NEW_OPERATOR, language);
+    }
+
+    private String callLabel(RentalListing listing, Language language) {
+        LocalizedText label = listing.getCallLabel();
+        return label != null ? label.resolve(language) : messages.get(CALL_LABEL, language, listing.getOwner().firstName());
+    }
+
+    private String bookLabel(RentalListing listing, Language language) {
+        LocalizedText label = listing.getBookLabel();
+        return label != null ? label.resolve(language) : messages.get(BOOK_LABEL_PREFIX + listing.getCategory().name(), language);
+    }
+
+    private static @Nullable String resolve(@Nullable LocalizedText text, Language language) {
+        return text != null ? text.resolve(language) : null;
     }
 }

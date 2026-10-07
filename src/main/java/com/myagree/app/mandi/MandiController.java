@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.myagree.app.common.i18n.Language;
 import com.myagree.app.mandi.dto.BuyerInquiryResponse;
 import com.myagree.app.mandi.dto.MandiOverviewResponse;
 
@@ -20,8 +21,8 @@ class MandiController {
     }
 
     @GetMapping
-    MandiOverviewResponse overview() {
-        return mandiService.overview();
+    MandiOverviewResponse overview(Language language) {
+        return mandiService.overview(language);
     }
 
     @PostMapping("/inquiries/{id}/respond")

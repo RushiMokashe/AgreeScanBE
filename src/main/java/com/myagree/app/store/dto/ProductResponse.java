@@ -5,7 +5,12 @@ import org.jspecify.annotations.Nullable;
 import com.myagree.app.common.Tone;
 import com.myagree.app.store.ProductCategory;
 
-/** Mirrors {@code Product} in frontend/src/lib/types.ts. */
+/**
+ * Mirrors {@code Product} in frontend/src/lib/types.ts.
+ *
+ * @param imageUrl {@code null} for catalogue items without a photo, which show their category's icon tile
+ * @param barcode  the EAN-13 printed on the pack
+ */
 public record ProductResponse(
         long id,
         String name,
@@ -17,7 +22,7 @@ public record ProductResponse(
         String description,
         int price,
         @Nullable Integer mrp,
-        String imageUrl,
+        @Nullable String imageUrl,
         @Nullable Double rating,
         @Nullable String imageBadge,
         Tone imageBadgeTone,
@@ -26,5 +31,7 @@ public record ProductResponse(
         String footerIcon,
         String footerText,
         Tone footerTone,
-        boolean flashDeal) {
+        boolean flashDeal,
+        boolean inStock,
+        @Nullable String barcode) {
 }

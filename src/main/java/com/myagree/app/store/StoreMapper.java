@@ -2,153 +2,187 @@ package com.myagree.app.store;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.jspecify.annotations.Nullable;
+import org.springframework.stereotype.Component;
 
+import com.myagree.app.common.i18n.IndianNumbers;
+import com.myagree.app.common.i18n.Language;
+import com.myagree.app.common.i18n.LocalizedText;
+import com.myagree.app.common.i18n.Messages;
+import com.myagree.app.store.dto.AdminProductResponse;
 import com.myagree.app.store.dto.CartItemResponse;
 import com.myagree.app.store.dto.CartResponse;
 import com.myagree.app.store.dto.OrderConfirmationResponse;
+import com.myagree.app.store.dto.OrderSummaryResponse;
+import com.myagree.app.store.dto.OrderSummaryResponse.OrderLineResponse;
 import com.myagree.app.store.dto.ProductResponse;
 import com.myagree.app.store.dto.RxBundleResponse;
 import com.myagree.app.store.dto.StoreCategoryResponse;
 import com.myagree.app.store.dto.StoreHomeResponse;
 
-final class StoreMapper {
+/** Shows the store, carts and orders in the reader's language. */
+@Component
+class StoreMapper {
 
-    private static final String ORDER_PLACED_MESSAGE = "Order #%d placed • %s • Cash on Delivery";
-    private static final String RUPEE_SIGN = "₹";
-    /** Digits that close the rupee amount; everything before them is grouped in pairs (lakh, crore). */
-    private static final int LAST_GROUP_DIGITS = 3;
-    /** Matches the positions inside the leading digits where a lakh/crore separator goes. */
-    private static final Pattern PAIR_BOUNDARY = Pattern.compile("\\B(?=(\\d{2})+$)");
+    private static final String ORDER_PLACED = "store.order.placed";
+    private static final String PAYMENT_METHOD_PREFIX = "store.order.payment.";
+    private static final String MORE_ITEMS = "store.cart.more";
     private static final String SUMMARY_SEPARATOR = " + ";
-    /** The cart bar names this many products, then counts the rest ("A + B + 2 more"). */
+    private static final String NO_SUMMARY = "";
+    /** A summary names this many products, then counts the rest ("A + B + 2 more"). */
     private static final int SUMMARY_NAMED_ITEMS = 2;
 
-    private StoreMapper() {
+    private final Messages messages;
+
+    StoreMapper(Messages messages) {
+        this.messages = messages;
     }
 
-    static ProductResponse toResponse(Product product) {
+    static ProductResponse toResponse(Product product, Language language) {
         return new ProductResponse(
                 product.getId(),
-                product.getName(),
-                product.getShortName(),
+                product.getName().resolve(language),
+                product.getShortName().resolve(language),
                 product.getCategory(),
-                product.getTag(),
+                resolve(product.getTag(), language),
                 product.getTagTone(),
-                product.getPackSize(),
-                product.getDescription(),
+                resolve(product.getPackSize(), language),
+                product.getDescription().resolve(language),
                 product.getPrice(),
                 product.getMrp(),
                 product.getImageUrl(),
                 product.getRating(),
-                product.getImageBadge(),
+                resolve(product.getImageBadge(), language),
                 product.getImageBadgeTone(),
-                product.getStockNote(),
+                product.getStockNote().resolve(language),
                 product.getStockTone(),
                 product.getFooterIcon(),
-                product.getFooterText(),
+                product.getFooterText().resolve(language),
                 product.getFooterTone(),
-                product.isFlashDeal());
+                product.isFlashDeal(),
+                product.isInStock(),
+                product.getBarcode());
     }
 
-    static StoreHomeResponse toHome(StoreDepot depot, @Nullable RxBundle rxBundle, int rxCount,
-                                    List<StoreCategory> categories, List<Product> flashDeals) {
+    static StoreHomeResponse toHome(StoreDepot depot, @Nullable RxBundle rxBundle, long rxCount,
+                                    List<StoreCategory> categories, List<Product> flashDeals, Language language) {
         return new StoreHomeResponse(
                 depot.getName(),
                 depot.isOpen(),
-                depot.getDeliveryLabel(),
-                rxBundle != null ? toResponse(rxBundle) : null,
-                rxCount,
-                categories.stream().map(StoreMapper::toResponse).toList(),
+                depot.getDeliveryLabel().resolve(language),
+                rxBundle != null ? toResponse(rxBundle, language) : null,
+                Math.toIntExact(rxCount),
+                categories.stream().map(category -> toResponse(category, language)).toList(),
                 depot.getFlashDealEndsAt(),
-                flashDeals.stream().map(StoreMapper::toResponse).toList());
+                flashDeals.stream().map(product -> toResponse(product, language)).toList());
     }
 
-    static CartResponse toResponse(Cart cart) {
+    CartResponse toResponse(Cart cart, Language language) {
         List<CartItem> items = cart.getItems();
         return new CartResponse(
-                items.stream().map(StoreMapper::toResponse).toList(),
+                items.stream().map(item -> toResponse(item, language)).toList(),
                 cart.itemCount(),
                 cart.total(),
                 cart.qualifiesForFreeDelivery(),
-                summarize(items));
+                summarize(items.stream().map(item -> item.getProduct().getShortName()).toList(), language));
     }
 
     static CartResponse emptyCart() {
-        return new CartResponse(List.of(), 0, 0, false, "");
+        return new CartResponse(List.of(), 0, 0, false, NO_SUMMARY);
     }
 
-    static OrderConfirmationResponse toConfirmation(Order order) {
+    /** "Order #12 placed • ₹730 • Cash on Delivery". */
+    OrderConfirmationResponse toConfirmation(Order order, Language language) {
         return new OrderConfirmationResponse(
                 order.getId(),
                 order.getItemCount(),
                 order.getTotal(),
                 order.getStatus(),
-                ORDER_PLACED_MESSAGE.formatted(order.getId(), rupees(order.getTotal())));
+                order.getPaymentMethod(),
+                messages.get(ORDER_PLACED, language, String.valueOf(order.getId()), IndianNumbers.rupees(order.getTotal()),
+                        messages.get(PAYMENT_METHOD_PREFIX + order.getPaymentMethod().name(), language)));
     }
 
-    private static RxBundleResponse toResponse(RxBundle bundle) {
+    OrderSummaryResponse toSummary(Order order, Language language) {
+        List<OrderLine> lines = order.getLines();
+        return new OrderSummaryResponse(
+                order.getId(),
+                order.getPlacedAt(),
+                order.getItemCount(),
+                order.getTotal(),
+                order.getStatus(),
+                order.getPaymentMethod(),
+                summarize(lines.stream().map(OrderLine::getShortName).toList(), language),
+                lines.stream()
+                        .map(line -> new OrderLineResponse(line.getName().resolve(language), line.getQuantity(),
+                                line.getUnitPrice(), line.lineTotal()))
+                        .toList());
+    }
+
+    static AdminProductResponse toAdminResponse(Product product, Language language) {
+        return new AdminProductResponse(
+                product.getId(),
+                product.getName().resolve(language),
+                product.getCategory(),
+                product.getPrice(),
+                product.getMrp(),
+                product.isFlashDeal(),
+                product.isInStock(),
+                product.getImageUrl(),
+                product.getBarcode());
+    }
+
+    private static RxBundleResponse toResponse(RxBundle bundle, Language language) {
         Product product = bundle.getProduct();
         return new RxBundleResponse(
                 product.getId(),
                 bundle.getScanId(),
-                bundle.getLabel(),
+                bundle.getLabel().resolve(language),
                 bundle.getPrescribedAt(),
-                product.getName(),
-                product.getDescription(),
+                product.getName().resolve(language),
+                product.getDescription().resolve(language),
                 product.getPrice(),
                 Objects.requireNonNullElse(product.getMrp(), product.getPrice()),
                 product.getImageUrl(),
-                bundle.getGenuineLabel(),
-                bundle.getSubsidyLabel());
+                bundle.getGenuineLabel().resolve(language),
+                bundle.getSubsidyLabel().resolve(language));
     }
 
-    private static StoreCategoryResponse toResponse(StoreCategory category) {
+    private static StoreCategoryResponse toResponse(StoreCategory category, Language language) {
         return new StoreCategoryResponse(
                 category.getCategory(),
-                category.getTitle(),
-                category.getLocalTitle(),
-                category.getDescription(),
+                category.getTitle().resolve(language),
+                category.getLocalTitle().resolve(language),
+                category.getDescription().resolve(language),
                 category.getIcon(),
-                category.getBadge());
+                category.getBadge().resolve(language));
     }
 
-    private static CartItemResponse toResponse(CartItem item) {
+    private static CartItemResponse toResponse(CartItem item, Language language) {
         Product product = item.getProduct();
         return new CartItemResponse(
                 item.getId(),
                 product.getId(),
-                product.getName(),
-                product.getShortName(),
+                product.getName().resolve(language),
+                product.getShortName().resolve(language),
                 item.getQuantity(),
                 item.unitPrice(),
                 item.lineTotal());
     }
 
-    /** "Mancozeb 500g + Doodh Dhara 5kg", or "A + B + 2 more" for longer carts; empty for an empty cart. */
-    private static String summarize(List<CartItem> items) {
-        String named = items.stream()
+    /** "Mancozeb 500g + Doodh Dhara 5kg", or "A + B + 2 more" for more products; empty for none. */
+    private String summarize(List<LocalizedText> shortNames, Language language) {
+        String named = shortNames.stream()
                 .limit(SUMMARY_NAMED_ITEMS)
-                .map(item -> item.getProduct().getShortName())
+                .map(name -> name.resolve(language))
                 .collect(Collectors.joining(SUMMARY_SEPARATOR));
-        int unnamed = items.size() - SUMMARY_NAMED_ITEMS;
-        return unnamed > 0 ? named + SUMMARY_SEPARATOR + unnamed + " more" : named;
+        int unnamed = shortNames.size() - SUMMARY_NAMED_ITEMS;
+        return unnamed > 0 ? named + ' ' + messages.get(MORE_ITEMS, language, String.valueOf(unnamed)) : named;
     }
 
-    /**
-     * Rupees with Indian digit grouping, e.g. "₹1,08,230". The JDK's number formats support a single grouping
-     * size only, so the en-IN pattern (#,##,##0) has to be applied by hand.
-     */
-    static String rupees(long amount) {
-        String digits = Long.toString(amount);
-        if (digits.length() <= LAST_GROUP_DIGITS) {
-            return RUPEE_SIGN + digits;
-        }
-        int split = digits.length() - LAST_GROUP_DIGITS;
-        String leading = PAIR_BOUNDARY.matcher(digits.substring(0, split)).replaceAll(",");
-        return RUPEE_SIGN + leading + "," + digits.substring(split);
+    private static @Nullable String resolve(@Nullable LocalizedText text, Language language) {
+        return text != null ? text.resolve(language) : null;
     }
 }

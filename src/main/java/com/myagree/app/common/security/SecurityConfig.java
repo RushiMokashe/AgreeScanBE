@@ -43,8 +43,8 @@ import tools.jackson.databind.json.JsonMapper;
 /**
  * Stateless bearer-token security for {@code /api/**}. Access rules (docs/architecture/phase-2.md, section 2):
  * sign-in endpoints, signed media URLs and payment webhooks are public; {@code /api/admin/**} needs ADMIN,
- * {@code /api/owner/**} needs VEHICLE_OWNER, {@code /api/auth/me/**} and {@code /api/notifications/**} any signed-in
- * user, and the rest of {@code /api/**} needs FARMER. Everything else is denied.
+ * {@code /api/owner/**} needs VEHICLE_OWNER, {@code /api/auth/me/**}, {@code /api/notifications/**} and
+ * {@code /api/rentals/hubs} any signed-in user, and the rest of {@code /api/**} needs FARMER. Everything else is denied.
  */
 @Configuration(proxyBeanMethods = false)
 class SecurityConfig {
@@ -52,8 +52,12 @@ class SecurityConfig {
     /** These authenticate by other means: password, refresh cookie, URL signature or provider signature. */
     private static final RequestMatcher PUBLIC_ENDPOINTS = anyOf(
             "/api/auth/login", "/api/auth/refresh", "/api/auth/logout", "/api/media/**", "/api/payments/webhooks/**");
-    /** Open to every signed-in user, whatever their roles. */
-    private static final RequestMatcher ANY_ROLE_ENDPOINTS = anyOf("/api/auth/me/**", "/api/notifications/**");
+    /**
+     * Open to every signed-in user, whatever their roles. Owners and admins pick a rental hub from the same list
+     * farmers choose from.
+     */
+    private static final RequestMatcher ANY_ROLE_ENDPOINTS =
+            anyOf("/api/auth/me/**", "/api/notifications/**", "/api/rentals/hubs");
     private static final String ROLE_AUTHORITY_PREFIX = "ROLE_";
 
     @Bean

@@ -5,6 +5,7 @@ import java.time.Duration;
 import java.util.List;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
@@ -20,6 +21,7 @@ import org.springframework.validation.annotation.Validated;
  * @param corsAllowedOrigins browser origins allowed to call {@code /api/**} directly (the Vite dev server)
  * @param security           sign-in tokens and the refresh cookie
  * @param payments           online payment providers
+ * @param mongodb            MongoDB, which keeps the payment activity log (the connection itself is {@code spring.mongodb.uri})
  * @param assistant          the voice assistant's language model
  */
 @ConfigurationProperties("agriscan")
@@ -29,6 +31,7 @@ public record AgriScanProperties(
         @NotNull List<String> corsAllowedOrigins,
         @NotNull @Valid Security security,
         @NotNull @Valid Payments payments,
+        @NotNull @Valid Mongodb mongodb,
         @NotNull @Valid Assistant assistant) {
 
     /**
@@ -74,6 +77,20 @@ public record AgriScanProperties(
                 return StringUtils.hasText(keyId) && StringUtils.hasText(keySecret);
             }
         }
+    }
+
+    /**
+     * @param enabled                record payment activity in MongoDB; off in tests, which need no MongoDB
+     * @param connectTimeout         how long opening a connection to MongoDB may take
+     * @param serverSelectionTimeout how long an operation waits for a reachable MongoDB before it fails, instead of the
+     *                               driver's 30 seconds
+     * @param maxPoolSize            the most connections kept open to MongoDB
+     */
+    public record Mongodb(
+            boolean enabled,
+            @NotNull Duration connectTimeout,
+            @NotNull Duration serverSelectionTimeout,
+            @Min(1) int maxPoolSize) {
     }
 
     /** @param anthropic Claude, which answers when an API key is set; the rule-based engine answers otherwise */

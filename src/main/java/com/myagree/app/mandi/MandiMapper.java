@@ -2,24 +2,37 @@ package com.myagree.app.mandi;
 
 import java.util.List;
 
+import org.springframework.stereotype.Component;
+
+import com.myagree.app.common.i18n.Language;
+import com.myagree.app.common.i18n.Messages;
 import com.myagree.app.mandi.dto.BuyerInquiryResponse;
 import com.myagree.app.mandi.dto.CommodityPriceResponse;
 import com.myagree.app.mandi.dto.MandiMarketResponse;
 import com.myagree.app.mandi.dto.MandiOverviewResponse;
 import com.myagree.app.mandi.dto.PriceForecastResponse;
 
-final class MandiMapper {
+/** Shows the mandi board in the reader's language; the status label follows whether trading is open. */
+@Component
+class MandiMapper {
 
-    private MandiMapper() {
+    private static final String STATUS_OPEN = "market.mandi.status-open";
+    private static final String STATUS_CLOSED = "market.mandi.status-closed";
+
+    private final Messages messages;
+
+    MandiMapper(Messages messages) {
+        this.messages = messages;
     }
 
-    static MandiOverviewResponse toOverview(MandiMarket market, List<CommodityPrice> prices, List<BuyerInquiry> inquiries) {
+    MandiOverviewResponse toOverview(MandiMarket market, List<CommodityPrice> prices, List<BuyerInquiry> inquiries,
+                                     Language language) {
         PriceForecast forecast = market.getForecast();
         return new MandiOverviewResponse(
-                toResponse(market),
+                toResponse(market, language),
                 new PriceForecastResponse(forecast.tag(), forecast.message()),
                 market.getPricesUpdatedAt(),
-                prices.stream().map(MandiMapper::toResponse).toList(),
+                prices.stream().map(price -> toResponse(price, language)).toList(),
                 inquiries.stream().map(MandiMapper::toResponse).toList());
     }
 
@@ -49,31 +62,33 @@ final class MandiMapper {
                 inquiry.isResponded());
     }
 
-    private static MandiMarketResponse toResponse(MandiMarket market) {
+    private MandiMarketResponse toResponse(MandiMarket market, Language language) {
         MandiHelpline helpline = market.getHelpline();
         return new MandiMarketResponse(
                 market.getId(),
-                market.getName(),
-                market.getShortName(),
+                market.getName().resolve(language),
+                market.getShortName().resolve(language),
+                market.getDistrict().resolve(language),
                 market.isOpen(),
-                market.getStatusLabel(),
-                market.getBoardLabel(),
+                messages.get(market.isOpen() ? STATUS_OPEN : STATUS_CLOSED, language),
+                market.getBoardLabel().resolve(language),
                 market.getArrivalsQuintals(),
                 market.getImageUrl(),
                 helpline.phone(),
                 helpline.displayNumber(),
-                helpline.hours());
+                helpline.hours().resolve(language));
     }
 
-    private static CommodityPriceResponse toResponse(CommodityPrice price) {
+    private static CommodityPriceResponse toResponse(CommodityPrice price, Language language) {
+        Commodity commodity = price.getCommodity();
         return new CommodityPriceResponse(
                 price.getId(),
-                price.getCategory(),
-                price.getName(),
-                price.getGrade(),
+                commodity.category().resolve(language),
+                commodity.name().resolve(language),
+                commodity.grade().resolve(language),
                 price.getMinPrice(),
                 price.getMaxPrice(),
-                price.getUnit(),
+                commodity.unit().resolve(language),
                 price.getChangeAmount(),
                 price.getDemand());
     }

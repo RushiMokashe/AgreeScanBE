@@ -31,4 +31,15 @@ public interface PayableResolver {
      * @throws ConflictException when the order or booking cannot be paid in its current state
      */
     Optional<Payable> resolvePayable(long referenceId, long farmerId, Language language);
+
+    /**
+     * What a payment of the order or booking is for, in {@code language}, whatever state it is in now; the payment
+     * slice shows it with payments it has already scoped to the signed-in farmer, in the reader's language rather
+     * than the one the payment was opened in.
+     *
+     * @param referenceId the order or booking id of a payment
+     * @param language    the request's language
+     * @return the description, e.g. "Agro Store order #12", or empty when the order or booking no longer exists
+     */
+    Optional<String> describe(long referenceId, Language language);
 }

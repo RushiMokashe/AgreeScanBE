@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.myagree.app.care.dto.AgronomistResponse;
 import com.myagree.app.care.dto.NearbyStockResponse;
+import com.myagree.app.common.i18n.Language;
 
 @RestController
 @RequestMapping("/api/care")
@@ -18,8 +19,8 @@ class CareController {
     }
 
     @GetMapping("/nearby-stock")
-    NearbyStockResponse nearbyStock() {
-        return careService.nearbyStock();
+    NearbyStockResponse nearbyStock(Language language) {
+        return careService.nearbyStock(language);
     }
 
     @GetMapping("/agronomist")

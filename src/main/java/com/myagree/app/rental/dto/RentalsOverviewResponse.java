@@ -2,12 +2,20 @@ package com.myagree.app.rental.dto;
 
 import java.util.List;
 
-/** Mirrors {@code RentalsOverview} in frontend/src/lib/types.ts. */
+import org.jspecify.annotations.Nullable;
+
+/**
+ * Mirrors {@code RentalsOverview} in frontend/src/lib/types.ts.
+ *
+ * @param onlineCount the hub's vehicles taking bookings now, the spotlight's included
+ * @param spotlight   {@code null} when the hub has no spotlight offer taking bookings
+ */
 public record RentalsOverviewResponse(
+        long hubId,
         String hubName,
         int radiusKm,
         String routes,
-        int onlineCount,
-        RentalSpotlightResponse spotlight,
+        long onlineCount,
+        @Nullable RentalSpotlightResponse spotlight,
         List<RentalListingResponse> listings) {
 }

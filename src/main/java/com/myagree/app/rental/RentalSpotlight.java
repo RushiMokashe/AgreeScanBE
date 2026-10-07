@@ -5,6 +5,7 @@ import java.util.List;
 
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -14,9 +15,14 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.OrderColumn;
 
+import org.hibernate.annotations.EmbeddedColumnNaming;
+
+import com.myagree.app.common.i18n.LocalizedText;
+
 /**
- * The featured transport offer at the top of the rentals screen. It is backed by its own listing (which is
- * what gets booked) and is kept out of the regular listing grid.
+ * The featured transport offer at the top of a hub's rentals screen. It is backed by its own listing, which is what
+ * gets booked, prices the trip and decides the hub; that listing is kept out of the regular grid, and the offer is
+ * hidden while the listing is offline.
  */
 @Entity
 public class RentalSpotlight {
@@ -29,9 +35,13 @@ public class RentalSpotlight {
     @JoinColumn(name = "listing_id", unique = true)
     private RentalListing listing;
 
-    private String label;
+    /** "Mandi Harvest Express • ताजी मंडी रवानगी" */
+    @Embedded
+    @EmbeddedColumnNaming("label_%s")
+    private LocalizedText label;
+
     private String imageUrl;
-    private int baseFare;
+
     private int dispatchMinutes;
 
     @ElementCollection
@@ -42,12 +52,11 @@ public class RentalSpotlight {
     protected RentalSpotlight() {
     }
 
-    public RentalSpotlight(RentalListing listing, String label, String imageUrl, int baseFare, int dispatchMinutes,
+    public RentalSpotlight(RentalListing listing, LocalizedText label, String imageUrl, int dispatchMinutes,
                            List<RentalPerk> perks) {
         this.listing = listing;
         this.label = label;
         this.imageUrl = imageUrl;
-        this.baseFare = baseFare;
         this.dispatchMinutes = dispatchMinutes;
         this.perks = new ArrayList<>(perks);
     }
@@ -60,16 +69,12 @@ public class RentalSpotlight {
         return listing;
     }
 
-    public String getLabel() {
+    public LocalizedText getLabel() {
         return label;
     }
 
     public String getImageUrl() {
         return imageUrl;
-    }
-
-    public int getBaseFare() {
-        return baseFare;
     }
 
     public int getDispatchMinutes() {
