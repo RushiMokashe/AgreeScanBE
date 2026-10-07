@@ -18,6 +18,7 @@ import org.jspecify.annotations.Nullable;
 
 import com.myagree.app.common.spi.Payable;
 import com.myagree.app.common.spi.PaymentPurpose;
+import com.myagree.app.common.spi.ScanAndPayPayee;
 
 /**
  * One online payment of an order or a booking (docs/architecture/phase-2.md, D5). The amount, description and payer
@@ -29,7 +30,8 @@ import com.myagree.app.common.spi.PaymentPurpose;
 @Table(name = "payment",
         indexes = {
                 @Index(name = "payment_by_reference", columnList = "purpose, reference_id, farmer_id"),
-                @Index(name = "payment_by_status", columnList = "status, settled_at")},
+                @Index(name = "payment_by_status", columnList = "status, settled_at"),
+                @Index(name = "payment_by_payee", columnList = "payee_user_id, status")},
         uniqueConstraints = @UniqueConstraint(name = "payment_provider_reference",
                 columnNames = {"provider", "provider_reference"}))
 public class Payment {
@@ -74,9 +76,20 @@ public class Payment {
     @Column(nullable = false, updatable = false)
     private PaymentProviderKind provider;
 
-    /** The provider's id for it: a Stripe PaymentIntent or a Razorpay order; set once it is opened. */
+    /**
+     * The provider's id for it: a Stripe PaymentIntent or a Razorpay order, set once it is opened; for Scan & Pay, the
+     * UPI transaction reference (UTR) the farmer entered, which therefore pays for one payment only.
+     */
     @Column(name = "provider_reference")
     private @Nullable String providerReference;
+
+    /** For Scan & Pay: the seller's account, the only one that may confirm or reject the payment. */
+    @Column(name = "payee_user_id", updatable = false)
+    private @Nullable Long payeeUserId;
+
+    /** For Scan & Pay: who the farmer paid, e.g. "Solapur Mandi Agro Depot". */
+    @Column(updatable = false)
+    private @Nullable String payeeName;
 
     /** What Stripe's Payment Element needs to show the payment; only for Stripe. */
     private @Nullable String clientSecret;
@@ -115,6 +128,19 @@ public class Payment {
         this.status = PaymentStatusCode.REQUIRES_PAYMENT;
         this.createdAt = at;
         this.updatedAt = at;
+    }
+
+    /**
+     * A Scan & Pay payment: the farmer says they paid {@code payee} directly, quoting the UPI transaction reference, so
+     * it waits ({@code PROCESSING}) for the payee to confirm the money arrived.
+     */
+    static Payment scanAndPay(Payable payable, ScanAndPayPayee payee, long payerUserId, String upiReference, Instant at) {
+        Payment payment = new Payment(payable, payerUserId, PaymentProviderKind.SCAN_AND_PAY, at);
+        payment.status = PaymentStatusCode.PROCESSING;
+        payment.providerReference = upiReference;
+        payment.payeeUserId = payee.payeeUserId();
+        payment.payeeName = payee.payeeName();
+        return payment;
     }
 
     /** Records how the provider knows the payment once it is opened there. */
@@ -225,6 +251,18 @@ public class Payment {
 
     public PaymentProviderKind getProvider() {
         return provider;
+    }
+
+    public @Nullable Long getPayeeUserId() {
+        return payeeUserId;
+    }
+
+    public @Nullable String getPayeeName() {
+        return payeeName;
+    }
+
+    public boolean isScanAndPay() {
+        return provider == PaymentProviderKind.SCAN_AND_PAY;
     }
 
     public @Nullable String getProviderReference() {

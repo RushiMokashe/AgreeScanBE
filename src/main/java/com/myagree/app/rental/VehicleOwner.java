@@ -4,7 +4,10 @@ import java.util.Arrays;
 import java.util.Locale;
 import java.util.stream.Collectors;
 
+import jakarta.persistence.AttributeOverride;
+import jakarta.persistence.AttributeOverrides;
 import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -15,6 +18,9 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 import org.jspecify.annotations.Nullable;
+
+import com.myagree.app.common.UpiId;
+import com.myagree.app.common.media.StoredPhoto;
 
 /**
  * The vehicle-owner profile of an account with the VEHICLE_OWNER role (docs/architecture/phase-2.md, D1): the name
@@ -52,6 +58,17 @@ public class VehicleOwner {
     @JoinColumn(name = "hub_id")
     private RentalHub hub;
 
+    /** Where Scan & Pay sends a farmer's payment for a booking, e.g. "rameshwar.patil@okaxis"; {@code null} for none. */
+    @Column(length = UpiId.MAX_LENGTH)
+    private @Nullable String upiId;
+
+    /** The UPI QR the owner uploaded from their payments app, served through a signed media URL. */
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "fileName", column = @Column(name = "upi_qr_file_name", length = 36)),
+            @AttributeOverride(name = "contentType", column = @Column(name = "upi_qr_content_type", length = 100))})
+    private @Nullable StoredPhoto upiQr;
+
     protected VehicleOwner() {
     }
 
@@ -66,6 +83,32 @@ public class VehicleOwner {
         this.name = name.strip();
         this.businessName = businessName == null || businessName.isBlank() ? null : businessName.strip();
         this.hub = hub;
+    }
+
+    /** Where Scan & Pay sends farmers' payments; a {@code null} or blank UPI ID removes it. */
+    void changeUpiId(@Nullable String upiId) {
+        this.upiId = upiId == null || upiId.isBlank() ? null : upiId.strip();
+    }
+
+    void replaceUpiQr(StoredPhoto upiQr) {
+        this.upiQr = upiQr;
+    }
+
+    void removeUpiQr() {
+        this.upiQr = null;
+    }
+
+    /** Whether farmers can pay the owner directly: the owner has a UPI ID or a QR. */
+    public boolean acceptsScanAndPay() {
+        return upiId != null || upiQr != null;
+    }
+
+    public @Nullable String getUpiId() {
+        return upiId;
+    }
+
+    public @Nullable StoredPhoto getUpiQr() {
+        return upiQr;
     }
 
     /** "RP" for "Rameshwar Patil", "AL" for "AgriScan Logistics", "V" for "Vinod". */

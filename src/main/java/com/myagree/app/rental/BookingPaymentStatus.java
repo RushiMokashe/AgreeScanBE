@@ -6,5 +6,7 @@ package com.myagree.app.rental;
  */
 public enum BookingPaymentStatus {
     UNPAID,
+    /** The farmer paid the owner by Scan & Pay; the owner has yet to confirm the money arrived. */
+    VERIFYING,
     PAID
 }

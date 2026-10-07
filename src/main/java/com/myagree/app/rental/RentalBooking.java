@@ -138,7 +138,34 @@ public class RentalBooking {
     }
 
     /**
-     * Records the online payment that paid the booking.
+     * The farmer paid the owner by Scan & Pay: the booking waits for the owner to confirm the money arrived.
+     *
+     * @return {@code false}, changing nothing, when the booking was not waiting for a payment
+     */
+    boolean awaitPaymentConfirmation() {
+        if (paymentStatus != BookingPaymentStatus.UNPAID) {
+            return false;
+        }
+        this.paymentStatus = BookingPaymentStatus.VERIFYING;
+        return true;
+    }
+
+    /**
+     * The owner did not receive the Scan & Pay payment: the booking can be paid again.
+     *
+     * @return {@code false}, changing nothing, when no payment was being verified
+     */
+    boolean paymentNotReceived() {
+        if (paymentStatus != BookingPaymentStatus.VERIFYING) {
+            return false;
+        }
+        this.paymentStatus = BookingPaymentStatus.UNPAID;
+        return true;
+    }
+
+    /**
+     * Records the online payment that paid the booking: a card or UPI payment, or a Scan & Pay payment the owner
+     * confirmed.
      *
      * @return {@code false}, changing nothing, when the booking was already paid
      */

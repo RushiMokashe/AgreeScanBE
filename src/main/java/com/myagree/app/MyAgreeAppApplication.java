@@ -10,5 +10,6 @@ public class MyAgreeAppApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(MyAgreeAppApplication.class, args);
+        System.out.println("Project In running state ");
     }
 }

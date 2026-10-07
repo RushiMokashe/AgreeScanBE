@@ -33,6 +33,11 @@ public abstract class ApiException extends RuntimeException {
         return status;
     }
 
+    /** The key of the user message, which a client may react to; {@code null} without one. */
+    public @Nullable String code() {
+        return userMessage != null ? userMessage.code() : null;
+    }
+
     /** The explanation for the user, in {@code language} when it is a {@link UserMessage}. */
     public String userMessage(Messages messages, Language language) {
         return userMessage != null ? messages.get(userMessage, language) : getMessage();

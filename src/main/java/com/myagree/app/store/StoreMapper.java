@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import com.myagree.app.common.i18n.IndianNumbers;
 import com.myagree.app.common.i18n.Language;
 import com.myagree.app.common.i18n.LocalizedText;
+import com.myagree.app.common.i18n.LocalizedTextDto;
 import com.myagree.app.common.i18n.Messages;
 import com.myagree.app.store.dto.AdminProductResponse;
 import com.myagree.app.store.dto.CartItemResponse;
@@ -19,6 +20,9 @@ import com.myagree.app.store.dto.OrderSummaryResponse;
 import com.myagree.app.store.dto.OrderSummaryResponse.OrderLineResponse;
 import com.myagree.app.store.dto.ProductResponse;
 import com.myagree.app.store.dto.RxBundleResponse;
+import com.myagree.app.store.dto.ShopOrderResponse;
+import com.myagree.app.store.dto.ShopProductResponse;
+import com.myagree.app.store.dto.ShopProfileResponse;
 import com.myagree.app.store.dto.StoreCategoryResponse;
 import com.myagree.app.store.dto.StoreHomeResponse;
 
@@ -35,12 +39,14 @@ class StoreMapper {
     private static final int SUMMARY_NAMED_ITEMS = 2;
 
     private final Messages messages;
+    private final StorePictures pictures;
 
-    StoreMapper(Messages messages) {
+    StoreMapper(Messages messages, StorePictures pictures) {
         this.messages = messages;
+        this.pictures = pictures;
     }
 
-    static ProductResponse toResponse(Product product, Language language) {
+    ProductResponse toResponse(Product product, Language language) {
         return new ProductResponse(
                 product.getId(),
                 product.getName().resolve(language),
@@ -52,7 +58,7 @@ class StoreMapper {
                 product.getDescription().resolve(language),
                 product.getPrice(),
                 product.getMrp(),
-                product.getImageUrl(),
+                pictures.imageUrl(product),
                 product.getRating(),
                 resolve(product.getImageBadge(), language),
                 product.getImageBadgeTone(),
@@ -63,10 +69,12 @@ class StoreMapper {
                 product.getFooterTone(),
                 product.isFlashDeal(),
                 product.isInStock(),
-                product.getBarcode());
+                product.getBarcode(),
+                product.getShop().getId(),
+                product.getShop().getName());
     }
 
-    static StoreHomeResponse toHome(StoreDepot depot, @Nullable RxBundle rxBundle, long rxCount,
+    StoreHomeResponse toHome(StoreDepot depot, @Nullable RxBundle rxBundle, long rxCount,
                                     List<StoreCategory> categories, List<Product> flashDeals, Language language) {
         return new StoreHomeResponse(
                 depot.getName(),
@@ -86,11 +94,13 @@ class StoreMapper {
                 cart.itemCount(),
                 cart.total(),
                 cart.qualifiesForFreeDelivery(),
-                summarize(items.stream().map(item -> item.getProduct().getShortName()).toList(), language));
+                summarize(items.stream().map(item -> item.getProduct().getShortName()).toList(), language),
+                cart.shop().map(Shop::getId).orElse(null),
+                cart.shop().map(Shop::getName).orElse(null));
     }
 
     static CartResponse emptyCart() {
-        return new CartResponse(List.of(), 0, 0, false, NO_SUMMARY);
+        return new CartResponse(List.of(), 0, 0, false, NO_SUMMARY, null, null);
     }
 
     /** "Order #12 placed • ₹730 • Cash on Delivery". */
@@ -115,13 +125,48 @@ class StoreMapper {
                 order.getStatus(),
                 order.getPaymentMethod(),
                 summarize(lines.stream().map(OrderLine::getShortName).toList(), language),
-                lines.stream()
-                        .map(line -> new OrderLineResponse(line.getName().resolve(language), line.getQuantity(),
-                                line.getUnitPrice(), line.lineTotal()))
-                        .toList());
+                toLines(order, language),
+                order.getShopName());
     }
 
-    static AdminProductResponse toAdminResponse(Product product, Language language) {
+    /** An order as its shop sees it: with the customer to deliver to. */
+    ShopOrderResponse toShopOrder(Order order, Language language) {
+        List<OrderLine> lines = order.getLines();
+        return new ShopOrderResponse(
+                order.getId(),
+                order.getPlacedAt(),
+                order.getCustomerName(),
+                order.getCustomerPhone(),
+                order.getItemCount(),
+                order.getTotal(),
+                order.getStatus(),
+                order.getPaymentMethod(),
+                summarize(lines.stream().map(OrderLine::getShortName).toList(), language),
+                toLines(order, language));
+    }
+
+    ShopProfileResponse toShopProfile(Shop shop) {
+        return new ShopProfileResponse(shop.getId(), shop.getName(), shop.getPlace(), shop.getPhone(), shop.getUpiId(),
+                pictures.upiQrUrl(shop), shop.acceptsScanAndPay());
+    }
+
+    /** A product with its texts in every language, as the shop portal edits it. */
+    ShopProductResponse toShopProduct(Product product) {
+        LocalizedText packSize = product.getPackSize();
+        return new ShopProductResponse(
+                product.getId(),
+                LocalizedTextDto.from(product.getName()),
+                product.getCategory(),
+                packSize != null ? LocalizedTextDto.from(packSize) : null,
+                LocalizedTextDto.from(product.getDescription()),
+                product.getPrice(),
+                product.getMrp(),
+                product.isInStock(),
+                product.getBarcode(),
+                pictures.imageUrl(product));
+    }
+
+    AdminProductResponse toAdminResponse(Product product, Language language) {
         return new AdminProductResponse(
                 product.getId(),
                 product.getName().resolve(language),
@@ -130,11 +175,19 @@ class StoreMapper {
                 product.getMrp(),
                 product.isFlashDeal(),
                 product.isInStock(),
-                product.getImageUrl(),
-                product.getBarcode());
+                pictures.imageUrl(product),
+                product.getBarcode(),
+                product.getShop().getName());
     }
 
-    private static RxBundleResponse toResponse(RxBundle bundle, Language language) {
+    private static List<OrderLineResponse> toLines(Order order, Language language) {
+        return order.getLines().stream()
+                .map(line -> new OrderLineResponse(line.getName().resolve(language), line.getQuantity(),
+                        line.getUnitPrice(), line.lineTotal()))
+                .toList();
+    }
+
+    private RxBundleResponse toResponse(RxBundle bundle, Language language) {
         Product product = bundle.getProduct();
         return new RxBundleResponse(
                 product.getId(),
@@ -145,7 +198,7 @@ class StoreMapper {
                 product.getDescription().resolve(language),
                 product.getPrice(),
                 Objects.requireNonNullElse(product.getMrp(), product.getPrice()),
-                product.getImageUrl(),
+                pictures.imageUrl(product),
                 bundle.getGenuineLabel().resolve(language),
                 bundle.getSubsidyLabel().resolve(language));
     }

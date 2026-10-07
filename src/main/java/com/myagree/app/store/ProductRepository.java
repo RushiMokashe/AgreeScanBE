@@ -16,6 +16,18 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     Optional<Product> findByBarcode(String barcode);
 
+    /** The product whose current photo is this file. */
+    Optional<Product> findByPhotoFileName(String fileName);
+
+    /** A shop's products, newest first, for its portal. */
+    List<Product> findByShopIdOrderByIdDesc(long shopId);
+
+    Optional<Product> findByIdAndShopId(long id, long shopId);
+
+    long countByShopId(long shopId);
+
+    long countByShopIdAndInStockFalse(long shopId);
+
     /**
      * Products in {@code category} whose name, short name, description or tag matches {@code pattern} in any
      * language; a {@code null} argument disables that filter. Build the pattern with {@link #containsPattern(String)}.

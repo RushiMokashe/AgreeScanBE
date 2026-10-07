@@ -33,5 +33,7 @@ public record ProductResponse(
         Tone footerTone,
         boolean flashDeal,
         boolean inStock,
-        @Nullable String barcode) {
+        @Nullable String barcode,
+        long shopId,
+        String shopName) {
 }

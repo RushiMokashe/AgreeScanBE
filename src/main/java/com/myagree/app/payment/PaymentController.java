@@ -18,6 +18,7 @@ import com.myagree.app.payment.dto.ConfirmPaymentRequest;
 import com.myagree.app.payment.dto.CreatePaymentRequest;
 import com.myagree.app.payment.dto.PaymentCheckoutResponse;
 import com.myagree.app.payment.dto.PaymentStatusResponse;
+import com.myagree.app.payment.dto.ScanAndPayRequest;
 
 /** The farmer's online payments of orders and bookings. */
 @RestController
@@ -34,6 +35,13 @@ class PaymentController {
     @ResponseStatus(HttpStatus.CREATED)
     PaymentCheckoutResponse create(CurrentUser user, @Valid @RequestBody CreatePaymentRequest request, Language language) {
         return paymentService.create(user, request, language);
+    }
+
+    /** The farmer paid the seller directly and quotes the UPI reference; the seller confirms it later. */
+    @PostMapping("/scan-and-pay")
+    @ResponseStatus(HttpStatus.CREATED)
+    PaymentStatusResponse scanAndPay(CurrentUser user, @Valid @RequestBody ScanAndPayRequest request, Language language) {
+        return paymentService.submitScanAndPay(user, request, language);
     }
 
     @GetMapping("/{id}")

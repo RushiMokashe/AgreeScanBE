@@ -14,5 +14,6 @@ public record AdminProductResponse(
         boolean flashDeal,
         boolean inStock,
         @Nullable String imageUrl,
-        @Nullable String barcode) {
+        @Nullable String barcode,
+        String shopName) {
 }

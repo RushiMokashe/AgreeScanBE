@@ -26,9 +26,16 @@ public class TestUsers {
     public static final String DEMO_FARMER_PHONE = "9876543210";
     public static final String SECOND_FARMER_PHONE = "9876543211";
     public static final String OWNER_PHONE = "9800012345";
+    /** Vinod Shinde, the owner of the demo farmer's accepted booking. */
+    public static final String BOOKED_OWNER_PHONE = "9822233445";
+    /** Sanjay Kulkarni of Solapur Mandi Agro Depot, which sells the demo farmer's cart. */
+    public static final String SHOPKEEPER_PHONE = "9800054321";
+    /** Mahesh Jadhav of Karmala Krishi Seva Kendra, which sells tools. */
+    public static final String SECOND_SHOPKEEPER_PHONE = "9800054322";
     public static final String ADMIN_PASSWORD = "Admin@123";
     public static final String FARMER_PASSWORD = "Farmer@123";
     public static final String OWNER_PASSWORD = "Owner@123";
+    public static final String SHOPKEEPER_PASSWORD = "Shop@123";
 
     /** Well past the access-token lifetime and the decoder's clock-skew allowance. */
     private static final Duration EXPIRED_TOKEN_AGE = Duration.ofHours(1);
@@ -58,6 +65,16 @@ public class TestUsers {
     /** Rameshwar Patil, a vehicle owner. */
     public RequestPostProcessor owner() {
         return signedInAs(OWNER_PHONE);
+    }
+
+    /** Sanjay Kulkarni, keeper of Solapur Mandi Agro Depot. */
+    public RequestPostProcessor shopkeeper() {
+        return signedInAs(SHOPKEEPER_PHONE);
+    }
+
+    /** Mahesh Jadhav, keeper of Karmala Krishi Seva Kendra: proves that shops only see their own records. */
+    public RequestPostProcessor secondShopkeeper() {
+        return signedInAs(SECOND_SHOPKEEPER_PHONE);
     }
 
     /** AgriScan Admin. */

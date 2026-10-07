@@ -35,7 +35,7 @@ class CartController {
 
     @PostMapping("/items")
     CartResponse addItem(@Valid @RequestBody AddCartItemRequest request, Language language) {
-        return cartService.addItem(request.productId(), request.quantity(), language);
+        return cartService.addItem(request.productId(), request.quantity(), request.replacesCart(), language);
     }
 
     @DeleteMapping("/items/{itemId}")

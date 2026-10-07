@@ -134,7 +134,7 @@ class AccessRulesApiTest {
 
     @Test
     void farmerRoleWithoutAFarmerProfileIsForbiddenFromFarmerData() throws Exception {
-        CurrentUser withoutProfile = new CurrentUser(999, "No Profile", Set.of(Role.FARMER), null, null, Language.EN);
+        CurrentUser withoutProfile = new CurrentUser(999, "No Profile", Set.of(Role.FARMER), null, null, null, Language.EN);
 
         mvc.perform(get("/api/farmer/me").with(users.signedInAs(withoutProfile)))
                 .andExpect(status().isForbidden())

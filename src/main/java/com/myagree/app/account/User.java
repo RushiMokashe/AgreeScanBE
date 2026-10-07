@@ -59,6 +59,7 @@ public class User {
 
     private @Nullable Long farmerId;
     private @Nullable Long ownerId;
+    private @Nullable Long shopId;
 
     @Column(nullable = false)
     private Instant createdAt;
@@ -121,6 +122,10 @@ public class User {
         this.ownerId = ownerId;
     }
 
+    void linkShop(long shopId) {
+        this.shopId = shopId;
+    }
+
     public Long getId() {
         return id;
     }
@@ -159,6 +164,10 @@ public class User {
 
     public @Nullable Long getOwnerId() {
         return ownerId;
+    }
+
+    public @Nullable Long getShopId() {
+        return shopId;
     }
 
     public Instant getCreatedAt() {

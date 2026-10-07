@@ -170,7 +170,9 @@ class AccountServiceTest {
     void searchMatchesNameOrPhoneAndFiltersByRole() {
         assertThat(names(accountService.search("sun", null, 0, 20))).containsExactly("Sunita Pawar");
         assertThat(names(accountService.search("98000", null, 0, 20)))
-                .containsExactly("Rameshwar Patil", "Shivraj Agro Service");
+                .containsExactly("Mahesh Jadhav", "Rameshwar Patil", "Sanjay Kulkarni", "Shivraj Agro Service");
+        assertThat(names(accountService.search(null, Role.SHOPKEEPER, 0, 20))).containsExactly("Mahesh Jadhav",
+                "Sanjay Kulkarni");
         assertThat(names(accountService.search(null, Role.FARMER, 0, 20))).containsExactly("Rishikesh", "Sunita Pawar");
         assertThat(names(accountService.search("  ", Role.VEHICLE_OWNER, 0, 20))).containsExactly("AgriScan Logistics",
                 "Balwant Transport Fleet", "Ganesh Kale", "Lasalgaon Onion Carriers", "Nitin Aher", "Pawar Transport",
@@ -191,7 +193,7 @@ class AccountServiceTest {
     @Test
     void countsAccountsPerRole() {
         assertThat(accountService.countByRole())
-                .isEqualTo(Map.of(Role.FARMER, 2L, Role.VEHICLE_OWNER, 9L, Role.ADMIN, 1L));
+                .isEqualTo(Map.of(Role.FARMER, 2L, Role.VEHICLE_OWNER, 9L, Role.SHOPKEEPER, 2L, Role.ADMIN, 1L));
     }
 
     private long adminId() {

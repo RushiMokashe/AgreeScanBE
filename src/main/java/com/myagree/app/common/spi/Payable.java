@@ -1,5 +1,7 @@
 package com.myagree.app.common.spi;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * An order or booking the signed-in farmer can pay online, as its owning slice describes it to the payment slice.
  * The server computes every amount; a client never sends one.
@@ -12,6 +14,7 @@ package com.myagree.app.common.spi;
  *                     checkout and sent to the payment provider
  * @param payerName    the farmer's name, prefilled in the provider's checkout
  * @param payerPhone   the farmer's 10-digit mobile number, prefilled in the provider's checkout
+ * @param payee        who receives a Scan & Pay payment directly; {@code null} when the seller offers no Scan & Pay
  */
 public record Payable(
         PaymentPurpose purpose,
@@ -20,7 +23,8 @@ public record Payable(
         long amountRupees,
         String description,
         String payerName,
-        String payerPhone) {
+        String payerPhone,
+        @Nullable ScanAndPayPayee payee) {
 
     public Payable {
         if (amountRupees < 1) {

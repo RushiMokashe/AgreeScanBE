@@ -16,5 +16,6 @@ public record CurrentUserResponse(
         List<Role> roles,
         Language preferredLanguage,
         @Nullable Long farmerId,
-        @Nullable Long ownerId) {
+        @Nullable Long ownerId,
+        @Nullable Long shopId) {
 }

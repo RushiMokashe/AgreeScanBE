@@ -30,8 +30,8 @@
       "description": "What happened to the payment"
     },
     "source": {
-      "enum": ["CHECKOUT", "CONFIRMATION", "WEBHOOK"],
-      "description": "Who reported it: the farmer starting checkout, the app confirming after the farmer paid, or the provider's webhook"
+      "enum": ["CHECKOUT", "CONFIRMATION", "WEBHOOK", "SELLER"],
+      "description": "Who reported it: the farmer starting checkout, the app confirming after the farmer paid, the provider's webhook, or the seller confirming a Scan & Pay payment"
     },
     "purpose": {
       "enum": ["STORE_ORDER", "RENTAL_BOOKING"],
@@ -57,12 +57,12 @@
       "description": "Always Indian rupees"
     },
     "provider": {
-      "enum": ["STRIPE", "RAZORPAY", "SIMULATED"],
-      "description": "Who processes the payment"
+      "enum": ["STRIPE", "RAZORPAY", "SIMULATED", "SCAN_AND_PAY"],
+      "description": "Who processes the payment; SCAN_AND_PAY went straight to the seller"
     },
     "providerReference": {
       "bsonType": "string",
-      "description": "The provider's id for the payment: a Stripe PaymentIntent (pi_...), a Razorpay order (order_...) or sim_<id>"
+      "description": "The provider's id for the payment: a Stripe PaymentIntent (pi_...), a Razorpay order (order_...), sim_<id>, or the farmer's UPI reference for Scan & Pay"
     },
     "failureReason": {
       "bsonType": "string",

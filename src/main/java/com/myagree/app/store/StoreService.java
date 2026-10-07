@@ -30,19 +30,21 @@ public class StoreService {
     private final StoreCategoryRepository categoryRepository;
     private final ProductRepository productRepository;
     private final RxBundleRepository rxBundleRepository;
+    private final StoreMapper mapper;
 
     public StoreService(StoreDepotRepository depotRepository, StoreCategoryRepository categoryRepository,
-                        ProductRepository productRepository, RxBundleRepository rxBundleRepository) {
+                        ProductRepository productRepository, RxBundleRepository rxBundleRepository, StoreMapper mapper) {
         this.depotRepository = depotRepository;
         this.categoryRepository = categoryRepository;
         this.productRepository = productRepository;
         this.rxBundleRepository = rxBundleRepository;
+        this.mapper = mapper;
     }
 
     /** The store front: depot status, the farmer's latest prescription bundle, departments and flash deals. */
     public StoreHomeResponse home(long farmerId, Language language) {
         StoreDepot depot = depotRepository.findFirstByOrderByIdAsc().orElseThrow(() -> new NotFoundException(NO_DEPOT));
-        return StoreMapper.toHome(
+        return mapper.toHome(
                 depot,
                 rxBundleRepository.findFirstByFarmerIdOrderByPrescribedAtDesc(farmerId).orElse(null),
                 rxBundleRepository.countByFarmerId(farmerId),
@@ -62,7 +64,7 @@ public class StoreService {
                                                 Language language) {
         String pattern = query == null || query.isBlank() ? null : ProductRepository.containsPattern(query);
         return productRepository.search(category, pattern).stream()
-                .map(product -> StoreMapper.toResponse(product, language))
+                .map(product -> mapper.toResponse(product, language))
                 .toList();
     }
 
@@ -72,7 +74,7 @@ public class StoreService {
      * @throws NotFoundException when there is no such product
      */
     public ProductResponse getProduct(long productId, Language language) {
-        return StoreMapper.toResponse(find(productId), language);
+        return mapper.toResponse(find(productId), language);
     }
 
     /**
@@ -87,14 +89,14 @@ public class StoreService {
             throw new BadRequestException(UserMessage.of(BARCODE_INVALID, barcode));
         }
         return productRepository.findByBarcode(barcode)
-                .map(product -> StoreMapper.toResponse(product, language))
+                .map(product -> mapper.toResponse(product, language))
                 .orElseThrow(() -> new NotFoundException(UserMessage.of(BARCODE_UNKNOWN, barcode)));
     }
 
     /** Every product with its price and availability, for the admin portal. */
     public List<AdminProductResponse> adminProducts(Language language) {
         return productRepository.findAllByOrderByIdAsc().stream()
-                .map(product -> StoreMapper.toAdminResponse(product, language))
+                .map(product -> mapper.toAdminResponse(product, language))
                 .toList();
     }
 
@@ -121,7 +123,7 @@ public class StoreService {
         if (update.inStock() != null) {
             product.changeStock(update.inStock());
         }
-        return StoreMapper.toAdminResponse(product, language);
+        return mapper.toAdminResponse(product, language);
     }
 
     private Product find(long productId) {

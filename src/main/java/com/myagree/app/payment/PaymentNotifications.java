@@ -31,7 +31,19 @@ class PaymentNotifications {
                 Notifier.DESCRIPTION, payment.getDescription()));
     }
 
+    /**
+     * A failed card or UPI payment charged nothing; a Scan & Pay payment the seller did not receive may have left the
+     * farmer's account, so it says so in other words.
+     */
     void failed(Payment payment) {
+        if (payment.isScanAndPay()) {
+            send(payment, NotificationType.PAYMENT_NOT_RECEIVED, Map.of(
+                    Notifier.PAYEE_NAME, Objects.requireNonNull(payment.getPayeeName()),
+                    Notifier.AMOUNT, String.valueOf(payment.getAmountRupees()),
+                    Notifier.DESCRIPTION, payment.getDescription(),
+                    Notifier.REASON, Objects.requireNonNullElse(payment.getFailureReason(), "")));
+            return;
+        }
         send(payment, NotificationType.PAYMENT_FAILED, Map.of(
                 Notifier.AMOUNT, String.valueOf(payment.getAmountRupees()),
                 Notifier.DESCRIPTION, payment.getDescription(),

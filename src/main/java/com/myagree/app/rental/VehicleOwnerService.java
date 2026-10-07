@@ -77,7 +77,7 @@ public class VehicleOwnerService {
 
     /** The signed-in owner's profile. */
     public VehicleOwnerProfileResponse profile(long ownerId, Language language) {
-        return OwnerMapper.toResponse(findOwner(ownerId), language);
+        return ownerMapper.toResponse(findOwner(ownerId), language);
     }
 
     /**
@@ -89,7 +89,23 @@ public class VehicleOwnerService {
     public VehicleOwnerProfileResponse updateProfile(long ownerId, OwnerProfileRequest request, Language language) {
         VehicleOwner owner = findOwner(ownerId);
         owner.update(request.name(), request.businessName(), knownHub(request.hubId()));
-        return OwnerMapper.toResponse(owner, language);
+        owner.changeUpiId(request.upiId());
+        return ownerMapper.toResponse(owner, language);
+    }
+
+    /** Shows {@code image} (a photo or screenshot of the owner's UPI QR) to farmers who pay by Scan & Pay. */
+    @Transactional
+    public VehicleOwnerProfileResponse uploadUpiQr(long ownerId, MultipartFile image, Language language) {
+        VehicleOwner owner = findOwner(ownerId);
+        owner.replaceUpiQr(photoStore.store(ListingPictures.OWNER_QR_KIND, image));
+        return ownerMapper.toResponse(owner, language);
+    }
+
+    @Transactional
+    public VehicleOwnerProfileResponse removeUpiQr(long ownerId, Language language) {
+        VehicleOwner owner = findOwner(ownerId);
+        owner.removeUpiQr();
+        return ownerMapper.toResponse(owner, language);
     }
 
     /** The owner's vehicles and bookings at a glance, with this month's online earnings (India time). */

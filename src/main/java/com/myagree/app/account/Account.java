@@ -28,6 +28,7 @@ public record Account(
         Language preferredLanguage,
         @Nullable Long farmerId,
         @Nullable Long ownerId,
+        @Nullable Long shopId,
         Instant createdAt,
         @Nullable Instant lastLoginAt) {
 
@@ -40,6 +41,6 @@ public record Account(
 
     /** The account as the signed-in user its access tokens describe. */
     public CurrentUser toCurrentUser() {
-        return new CurrentUser(id, name, Set.copyOf(roles), farmerId, ownerId, preferredLanguage);
+        return new CurrentUser(id, name, Set.copyOf(roles), farmerId, ownerId, shopId, preferredLanguage);
     }
 }

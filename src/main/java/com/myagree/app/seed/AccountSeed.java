@@ -30,7 +30,9 @@ public class AccountSeed implements DemoSeed {
             Account shivrajAgroService,
             Account vinodShinde,
             Account balwantTransportFleet,
-            Account agriscanLogistics) {
+            Account agriscanLogistics,
+            Account sanjayKulkarni,
+            Account maheshJadhav) {
     }
 
     private static final Logger log = LoggerFactory.getLogger(AccountSeed.class);
@@ -38,6 +40,7 @@ public class AccountSeed implements DemoSeed {
     private static final String ADMIN_PASSWORD = "Admin@123";
     private static final String FARMER_PASSWORD = "Farmer@123";
     private static final String OWNER_PASSWORD = "Owner@123";
+    private static final String SHOPKEEPER_PASSWORD = "Shop@123";
 
     private final AccountService accountService;
 
@@ -60,7 +63,9 @@ public class AccountSeed implements DemoSeed {
                 create("Shivraj Agro Service", "9800098765", Role.VEHICLE_OWNER, OWNER_PASSWORD),
                 create("Vinod Shinde", "9822233445", Role.VEHICLE_OWNER, OWNER_PASSWORD),
                 create("Balwant Transport Fleet", "9877766554", Role.VEHICLE_OWNER, OWNER_PASSWORD),
-                create("AgriScan Logistics", "9000000009", Role.VEHICLE_OWNER, OWNER_PASSWORD)));
+                create("AgriScan Logistics", "9000000009", Role.VEHICLE_OWNER, OWNER_PASSWORD),
+                create("Sanjay Kulkarni", "9800054321", Role.SHOPKEEPER, SHOPKEEPER_PASSWORD),
+                create("Mahesh Jadhav", "9800054322", Role.SHOPKEEPER, SHOPKEEPER_PASSWORD)));
         log.warn("Seeded the demo accounts; their passwords are public, so never seed a shared or production database");
     }
 

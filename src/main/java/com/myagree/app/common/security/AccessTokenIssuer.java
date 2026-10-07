@@ -14,7 +14,7 @@ import com.myagree.app.common.AgriScanProperties;
 
 /**
  * Issues HS256 access tokens carrying a {@link CurrentUser}: {@code sub} (user id), {@code name}, {@code roles},
- * {@code fid} (farmer id), {@code oid} (owner id) and {@code lang}, valid for {@code agriscan.security.access-token-ttl}.
+ * {@code fid} (farmer id), {@code oid} (owner id), {@code sid} (shop id) and {@code lang}, valid for {@code agriscan.security.access-token-ttl}.
  */
 @Component
 public class AccessTokenIssuer {

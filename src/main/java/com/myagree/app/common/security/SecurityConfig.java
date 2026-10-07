@@ -43,7 +43,8 @@ import tools.jackson.databind.json.JsonMapper;
 /**
  * Stateless bearer-token security for {@code /api/**}. Access rules (docs/architecture/phase-2.md, section 2):
  * sign-in endpoints, signed media URLs and payment webhooks are public; {@code /api/admin/**} needs ADMIN,
- * {@code /api/owner/**} needs VEHICLE_OWNER, {@code /api/auth/me/**}, {@code /api/notifications/**} and
+ * {@code /api/owner/**} needs VEHICLE_OWNER, {@code /api/shop/**} needs SHOPKEEPER, {@code /api/seller/**} (confirming
+ * Scan & Pay payments) needs SHOPKEEPER or VEHICLE_OWNER, {@code /api/auth/me/**}, {@code /api/notifications/**} and
  * {@code /api/rentals/hubs} any signed-in user, and the rest of {@code /api/**} needs FARMER. Everything else is denied.
  */
 @Configuration(proxyBeanMethods = false)
@@ -74,6 +75,9 @@ class SecurityConfig {
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
                         .requestMatchers("/api/admin/**").hasRole(Role.ADMIN.name())
                         .requestMatchers("/api/owner/**").hasRole(Role.VEHICLE_OWNER.name())
+                        .requestMatchers("/api/shop/**").hasRole(Role.SHOPKEEPER.name())
+                        // Shopkeepers and vehicle owners confirm the Scan & Pay payments farmers send them
+                        .requestMatchers("/api/seller/**").hasAnyRole(Role.SHOPKEEPER.name(), Role.VEHICLE_OWNER.name())
                         .requestMatchers(ANY_ROLE_ENDPOINTS).authenticated()
                         .requestMatchers("/api/**").hasRole(Role.FARMER.name())
                         .anyRequest().denyAll())

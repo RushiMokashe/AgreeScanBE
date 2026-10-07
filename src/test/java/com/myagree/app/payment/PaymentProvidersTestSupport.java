@@ -37,7 +37,7 @@ final class PaymentProvidersTestSupport {
     /** A ₹730 store order payment opened at {@code provider} as {@code reference}. */
     static Payment openedPayment(PaymentProviderKind provider, String reference) {
         Payment payment = new Payment(new Payable(PaymentPurpose.STORE_ORDER, 12, 3, 730, "Agro Store order #12",
-                "Rishikesh", "9876543210"), 2, provider, Instant.parse("2026-09-29T04:30:00Z"));
+                "Rishikesh", "9876543210", null), 2, provider, Instant.parse("2026-09-29T04:30:00Z"));
         payment.opened(new ProviderSession(reference, null));
         return payment;
     }

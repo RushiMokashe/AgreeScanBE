@@ -90,20 +90,31 @@ class NotificationApiTest {
                 .andExpect(jsonPath("$.items[1].title").value("बुकिंग रद्द हुई"));
     }
 
+    /** Every type reads well in every language, and a type with a reason also without one. */
     @Test
     void everyTypeHasTextsInEveryLanguage() throws Exception {
         long ownerId = ownerUserId();
+        int sent = 0;
         for (NotificationType type : NotificationType.values()) {
             Map<String, String> params = new HashMap<>();
             type.parameters().forEach(parameter -> params.put(parameter, "x"));
             notifier.notify(ownerId, type, params, OWNER_ROUTE);
+            sent++;
+            if (type.parameters().contains(Notifier.REASON)) {
+                params.put(Notifier.REASON, "");
+                notifier.notify(ownerId, type, params, OWNER_ROUTE);
+                sent++;
+            }
         }
         for (Language language : Language.values()) {
-            mvc.perform(get(LIST).with(users.owner()).header(HttpHeaders.ACCEPT_LANGUAGE, language.code()))
+            mvc.perform(get(LIST).param("size", "50").with(users.owner())
+                            .header(HttpHeaders.ACCEPT_LANGUAGE, language.code()))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.totalItems").value(NotificationType.values().length))
+                    .andExpect(jsonPath("$.totalItems").value(sent))
+                    .andExpect(jsonPath("$.items.length()").value(sent))
                     .andExpect(jsonPath("$.items[?(@.title == '')]").isEmpty())
-                    .andExpect(jsonPath("$.items[?(@.body =~ /.*\\{\\d\\}.*/)]").isEmpty());
+                    .andExpect(jsonPath("$.items[?(@.body =~ /.*\\{\\d\\}.*/)]").isEmpty())
+                    .andExpect(jsonPath("$.items[?(@.body =~ /^notification\\..*/)]").isEmpty());
         }
     }
 
@@ -190,7 +201,7 @@ class NotificationApiTest {
     @Test
     void theStreamDeliversCommittedNotificationsInItsLanguageAndNeverRolledBackOnes() throws Exception {
         CurrentUser streamUser = new CurrentUser(STREAM_USER_ID, "Stream Tester", Set.of(Role.FARMER), null, null,
-                Language.EN);
+                null, Language.EN);
         MvcResult stream = mvc.perform(get(STREAM).with(users.signedInAs(streamUser))
                         .header(HttpHeaders.ACCEPT_LANGUAGE, "hi"))
                 .andExpect(request().asyncStarted())
