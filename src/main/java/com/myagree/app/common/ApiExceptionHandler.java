@@ -49,7 +49,7 @@ class ApiExceptionHandler {
 
     @ExceptionHandler(ApiException.class)
     ResponseEntity<ApiError> handleApiException(ApiException ex, Language language) {
-        return respond(ex.status(), ex.userMessage(messages, language));
+        return respond(ex.status(), ex.userMessage(messages, language), ex.code());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -105,7 +105,11 @@ class ApiExceptionHandler {
     }
 
     private static ResponseEntity<ApiError> respond(HttpStatusCode status, String message) {
-        return ResponseEntity.status(status).body(ApiError.of(status, message));
+        return respond(status, message, null);
+    }
+
+    private static ResponseEntity<ApiError> respond(HttpStatusCode status, String message, @Nullable String code) {
+        return ResponseEntity.status(status).body(ApiError.of(status, message, code));
     }
 
     private static String describe(MessageSourceResolvable error) {

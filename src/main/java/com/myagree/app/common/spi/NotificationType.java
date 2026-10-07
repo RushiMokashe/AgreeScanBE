@@ -47,8 +47,8 @@ public enum NotificationType {
     /** To the shopkeeper or vehicle owner: a farmer paid them by Scan & Pay and asks them to confirm it arrived. */
     PAYMENT_TO_CONFIRM(FARMER_NAME, AMOUNT, DESCRIPTION, UPI_REFERENCE),
 
-    /** To the payer: the seller says a Scan & Pay payment did not reach them; the farmer can pay again. */
-    PAYMENT_NOT_RECEIVED(PAYEE_NAME, AMOUNT, DESCRIPTION);
+    /** To the payer: the seller did not receive a Scan & Pay payment, and why if they said; they can pay again. */
+    PAYMENT_NOT_RECEIVED(PAYEE_NAME, AMOUNT, DESCRIPTION, REASON);
 
     private final List<String> parameters;
 

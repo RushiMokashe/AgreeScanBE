@@ -180,17 +180,20 @@ class ScanAndPayApiTest {
                 .andExpect(jsonPath("$.status").value("SUCCEEDED"));
     }
 
-    /** The order follows the payment, and both sides are told, once each step is committed. */
+    /**
+     * The order follows the payment, and both sides are told, once each step is committed: money that did not arrive
+     * goes back to the farmer with the shopkeeper's reason, and the next payment makes the order paid.
+     */
     @Test
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
-    void theOrderWaitsForTheShopkeeperWhoIsNotifiedThenBecomesPaid() throws Exception {
+    void theOrderWaitsForTheShopkeeperWhoSaysWhetherTheMoneyArrived() throws Exception {
         RequestPostProcessor sunita = users.secondFarmer();
         long farmerId = users.account(TestUsers.SECOND_FARMER_PHONE).farmerId();
         try {
             mvc.perform(post("/api/cart/items").with(sunita).contentType(MediaType.APPLICATION_JSON)
                     .content("{\"productId\": %d, \"quantity\": 1}".formatted(mancozebId()))).andExpect(status().isOk());
             long order = checkoutOnline(sunita);
-            long paymentId = JsonBodies.readId(scanAndPay(sunita, "STORE_ORDER", order, "498765432101").andReturn(),
+            long firstPayment = JsonBodies.readId(scanAndPay(sunita, "STORE_ORDER", order, "498765432101").andReturn(),
                     "$.paymentId");
 
             mvc.perform(get("/api/orders/{id}", order).with(sunita))
@@ -203,7 +206,21 @@ class ScanAndPayApiTest {
                     .andExpect(jsonPath("$.items[0].body").value(("Sunita Pawar says they paid you ₹280 for Agro Store "
                             + "order #%d (UPI ref 498765432101). Check your bank and confirm it.").formatted(order)));
 
-            mvc.perform(post(SELLER_PAYMENTS + "/{id}/received", paymentId).with(users.shopkeeper()))
+            mvc.perform(post(SELLER_PAYMENTS + "/{id}/not-received", firstPayment).with(users.shopkeeper())
+                            .contentType(MediaType.APPLICATION_JSON).content("{\"reason\": \"Not in my account\"}"))
+                    .andExpect(status().isOk());
+
+            mvc.perform(get("/api/orders/{id}", order).with(sunita))
+                    .andExpect(jsonPath("$.status").value("AWAITING_PAYMENT"));
+            mvc.perform(get("/api/notifications").with(sunita))
+                    .andExpect(jsonPath("$.items[0].type").value("PAYMENT_NOT_RECEIVED"))
+                    .andExpect(jsonPath("$.items[0].body").value(("%s did not receive your ₹280 for Agro Store order #%d: "
+                            + "Not in my account. If money left your account, show them your UPI reference, or pay again.")
+                            .formatted(DEPOT, order)));
+
+            long secondPayment = JsonBodies.readId(scanAndPay(sunita, "STORE_ORDER", order, "498765432102").andReturn(),
+                    "$.paymentId");
+            mvc.perform(post(SELLER_PAYMENTS + "/{id}/received", secondPayment).with(users.shopkeeper()))
                     .andExpect(status().isOk());
 
             mvc.perform(get("/api/orders/{id}", order).with(sunita)).andExpect(jsonPath("$.status").value("PAID"));

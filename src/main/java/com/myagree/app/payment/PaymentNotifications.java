@@ -40,7 +40,8 @@ class PaymentNotifications {
             send(payment, NotificationType.PAYMENT_NOT_RECEIVED, Map.of(
                     Notifier.PAYEE_NAME, Objects.requireNonNull(payment.getPayeeName()),
                     Notifier.AMOUNT, String.valueOf(payment.getAmountRupees()),
-                    Notifier.DESCRIPTION, payment.getDescription()));
+                    Notifier.DESCRIPTION, payment.getDescription(),
+                    Notifier.REASON, Objects.requireNonNullElse(payment.getFailureReason(), "")));
             return;
         }
         send(payment, NotificationType.PAYMENT_FAILED, Map.of(

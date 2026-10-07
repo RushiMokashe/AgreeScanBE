@@ -124,7 +124,9 @@ class CartApiTest {
         addToCart(productId("TOOLS"), 1)
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value(
-                        "Your cart has products from Solapur Mandi Agro Depot. Empty it to buy from Karmala Krishi Seva Kendra."));
+                        "Your cart has products from Solapur Mandi Agro Depot. A cart holds one shop's products, so you pay "
+                                + "one shop at a time. Empty it to buy from Karmala Krishi Seva Kendra?"))
+                .andExpect(jsonPath("$.code").value("store.cart.other-shop"));
 
         long sprayer = productId("TOOLS");
         addToCart(sprayer, 1, true)
