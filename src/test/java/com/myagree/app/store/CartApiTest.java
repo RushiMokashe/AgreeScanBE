@@ -5,16 +5,19 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.endsWith;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 import com.myagree.app.support.AgriScanApiTest;
 import com.myagree.app.support.JsonBodies;
@@ -83,7 +86,7 @@ class CartApiTest {
 
     @Test
     void checkoutPlacesAnOrderAndEmptiesTheCart() throws Exception {
-        MvcResult confirmation = mvc.perform(post("/api/cart/checkout").with(users.demoFarmer()))
+        MvcResult confirmation = mvc.perform(checkout())
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.itemCount").value(2))
                 .andExpect(jsonPath("$.total").value(730))
@@ -105,17 +108,55 @@ class CartApiTest {
     void orderMessageUsesIndianDigitGrouping() throws Exception {
         addToCart(productId("TOOLS"), 50).andExpect(status().isOk());
 
-        mvc.perform(post("/api/cart/checkout").with(users.demoFarmer()))
+        mvc.perform(checkout())
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.total").value(108230))
                 .andExpect(jsonPath("$.message", endsWith(" placed • ₹1,08,230 • Cash on Delivery")));
     }
 
     @Test
-    void checkoutOfAnEmptyCartIsRejected() throws Exception {
-        mvc.perform(post("/api/cart/checkout").with(users.demoFarmer())).andExpect(status().isCreated());
+    void anOnlineOrderWaitsForItsPayment() throws Exception {
+        mvc.perform(post("/api/cart/checkout")
+                        .with(users.demoFarmer())
+                        .header(HttpHeaders.ACCEPT_LANGUAGE, "mr")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentMethod\": \"ONLINE\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value("AWAITING_PAYMENT"))
+                .andExpect(jsonPath("$.paymentMethod").value("ONLINE"))
+                .andExpect(jsonPath("$.message", endsWith(" नोंदवली • ₹730 • ऑनलाइन पेमेंट")));
+    }
 
-        mvc.perform(post("/api/cart/checkout").with(users.demoFarmer()))
+    @Test
+    void soldOutProductsCannotBeBought() throws Exception {
+        long secateurs = JsonBodies.readId(mvc.perform(get("/api/store/products/barcode/8904567000140")
+                .with(users.demoFarmer())).andReturn(), "$.id");
+        addToCart(secateurs, 1)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Secateurs is out of stock right now"));
+
+        long mancozeb = JsonBodies.readId(cart(), "$.items[0].productId");
+        mvc.perform(patch("/api/admin/products/{id}", mancozeb).with(users.admin())
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"inStock\": false}"))
+                .andExpect(status().isOk());
+        mvc.perform(checkout())
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message")
+                        .value("These products ran out since you added them: Mancozeb 500g. Remove them to check out."));
+    }
+
+    @Test
+    void checkoutNeedsAPaymentMethod() throws Exception {
+        mvc.perform(post("/api/cart/checkout").with(users.demoFarmer())
+                        .contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void checkoutOfAnEmptyCartIsRejected() throws Exception {
+        mvc.perform(checkout()).andExpect(status().isCreated());
+
+        mvc.perform(checkout())
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
                 .andExpect(jsonPath("$.message").value("Your cart is empty"));
@@ -148,6 +189,14 @@ class CartApiTest {
         MvcResult products = mvc.perform(get("/api/store/products").param("category", category).with(users.demoFarmer()))
                 .andReturn();
         return JsonBodies.readId(products, "$[0].id");
+    }
+
+    /** Checks the cart out for cash on delivery. */
+    private MockHttpServletRequestBuilder checkout() {
+        return post("/api/cart/checkout")
+                .with(users.demoFarmer())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"paymentMethod\": \"CASH_ON_DELIVERY\"}");
     }
 
     private ResultActions addToCart(long productId, int quantity) throws Exception {

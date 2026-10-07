@@ -2,6 +2,7 @@ package com.myagree.app.store;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 
 import org.jspecify.annotations.Nullable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -11,18 +12,30 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     List<Product> findByFlashDealTrueOrderByIdAsc();
 
+    List<Product> findAllByOrderByIdAsc();
+
+    Optional<Product> findByBarcode(String barcode);
+
     /**
-     * Products in {@code category} whose name, short name, description or tag matches {@code pattern};
-     * a {@code null} argument disables that filter. Build the pattern with {@link #containsPattern(String)}.
+     * Products in {@code category} whose name, short name, description or tag matches {@code pattern} in any
+     * language; a {@code null} argument disables that filter. Build the pattern with {@link #containsPattern(String)}.
      */
     @Query("""
             select p from Product p
             where (:category is null or p.category = :category)
               and (:pattern is null
-                   or lower(p.name) like :pattern escape '!'
-                   or lower(p.shortName) like :pattern escape '!'
-                   or lower(p.description) like :pattern escape '!'
-                   or lower(p.tag) like :pattern escape '!')
+                   or lower(p.name.en) like :pattern escape '!'
+                   or lower(p.name.mr) like :pattern escape '!'
+                   or lower(p.name.hi) like :pattern escape '!'
+                   or lower(p.shortName.en) like :pattern escape '!'
+                   or lower(p.shortName.mr) like :pattern escape '!'
+                   or lower(p.shortName.hi) like :pattern escape '!'
+                   or lower(p.description.en) like :pattern escape '!'
+                   or lower(p.description.mr) like :pattern escape '!'
+                   or lower(p.description.hi) like :pattern escape '!'
+                   or lower(p.tag.en) like :pattern escape '!'
+                   or lower(p.tag.mr) like :pattern escape '!'
+                   or lower(p.tag.hi) like :pattern escape '!')
             order by p.id""")
     List<Product> search(@Nullable ProductCategory category, @Nullable String pattern);
 

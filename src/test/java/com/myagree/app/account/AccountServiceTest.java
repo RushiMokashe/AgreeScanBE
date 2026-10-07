@@ -143,13 +143,16 @@ class AccountServiceTest {
 
     @Test
     void profilesAreLinkedOnceAndRelinkingTheSameProfileIsHarmless() {
-        long ownerId = users.account(OWNER_PHONE).id();
+        long adminId = adminId();
+        long seededOwnerProfile = users.account(OWNER_PHONE).ownerId();
 
-        assertThat(accountService.linkOwnerProfile(ownerId, 41).ownerId()).isEqualTo(41);
-        assertThat(accountService.linkOwnerProfile(ownerId, 41).ownerId()).isEqualTo(41);
-        assertThatIllegalStateException().isThrownBy(() -> accountService.linkOwnerProfile(ownerId, 42));
-        assertThat(accountService.linkFarmerProfile(ownerId, 7).farmerId()).isEqualTo(7);
-        assertThatIllegalStateException().isThrownBy(() -> accountService.linkFarmerProfile(ownerId, 8));
+        assertThat(accountService.linkOwnerProfile(adminId, 41).ownerId()).isEqualTo(41);
+        assertThat(accountService.linkOwnerProfile(adminId, 41).ownerId()).isEqualTo(41);
+        assertThatIllegalStateException().isThrownBy(() -> accountService.linkOwnerProfile(adminId, 42));
+        assertThat(accountService.linkFarmerProfile(adminId, 7).farmerId()).isEqualTo(7);
+        assertThatIllegalStateException().isThrownBy(() -> accountService.linkFarmerProfile(adminId, 8));
+        assertThat(accountService.linkOwnerProfile(users.account(OWNER_PHONE).id(), seededOwnerProfile).ownerId())
+                .isEqualTo(seededOwnerProfile);
     }
 
     @Test
@@ -170,7 +173,8 @@ class AccountServiceTest {
                 .containsExactly("Rameshwar Patil", "Shivraj Agro Service");
         assertThat(names(accountService.search(null, Role.FARMER, 0, 20))).containsExactly("Rishikesh", "Sunita Pawar");
         assertThat(names(accountService.search("  ", Role.VEHICLE_OWNER, 0, 20))).containsExactly("AgriScan Logistics",
-                "Balwant Transport Fleet", "Rameshwar Patil", "Shivraj Agro Service", "Vinod Shinde");
+                "Balwant Transport Fleet", "Ganesh Kale", "Lasalgaon Onion Carriers", "Nitin Aher", "Pawar Transport",
+                "Rameshwar Patil", "Shivraj Agro Service", "Vinod Shinde");
         assertThat(names(accountService.search("%", null, 0, 20))).isEmpty();
     }
 
@@ -178,16 +182,16 @@ class AccountServiceTest {
     void searchPagesThroughTheResults() {
         Page<Account> secondPage = accountService.search(null, Role.VEHICLE_OWNER, 1, 2);
 
-        assertThat(names(secondPage)).containsExactly("Rameshwar Patil", "Shivraj Agro Service");
-        assertThat(secondPage.getTotalElements()).isEqualTo(5);
-        assertThat(secondPage.getTotalPages()).isEqualTo(3);
+        assertThat(names(secondPage)).containsExactly("Ganesh Kale", "Lasalgaon Onion Carriers");
+        assertThat(secondPage.getTotalElements()).isEqualTo(9);
+        assertThat(secondPage.getTotalPages()).isEqualTo(5);
         assertThat(accountService.search(null, null, 0, 1000).getSize()).isEqualTo(AccountService.MAX_PAGE_SIZE);
     }
 
     @Test
     void countsAccountsPerRole() {
         assertThat(accountService.countByRole())
-                .isEqualTo(Map.of(Role.FARMER, 2L, Role.VEHICLE_OWNER, 5L, Role.ADMIN, 1L));
+                .isEqualTo(Map.of(Role.FARMER, 2L, Role.VEHICLE_OWNER, 9L, Role.ADMIN, 1L));
     }
 
     private long adminId() {

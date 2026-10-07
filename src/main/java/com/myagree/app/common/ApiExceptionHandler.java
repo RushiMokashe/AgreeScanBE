@@ -7,6 +7,7 @@ import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.MessageSourceResolvable;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
@@ -36,6 +37,7 @@ class ApiExceptionHandler {
 
     private static final UserMessage UNEXPECTED_ERROR = UserMessage.of("common.error.unexpected");
     private static final UserMessage UPLOAD_TOO_LARGE = UserMessage.of("common.error.upload-too-large");
+    private static final UserMessage CONCURRENT_CHANGE = UserMessage.of("common.error.concurrent-change");
     private static final String UNREADABLE_BODY_MESSAGE = "Request body is missing or is not valid JSON";
     private static final String MESSAGE_SEPARATOR = "; ";
 
@@ -81,6 +83,13 @@ class ApiExceptionHandler {
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     ResponseEntity<ApiError> handleUploadTooLarge(MaxUploadSizeExceededException ex, Language language) {
         return respond(HttpStatus.CONTENT_TOO_LARGE, messages.get(UPLOAD_TOO_LARGE, language));
+    }
+
+    /** Two requests changed the same record at once (an entity's {@code @Version} moved on); the loser retries. */
+    @ExceptionHandler(OptimisticLockingFailureException.class)
+    ResponseEntity<ApiError> handleConcurrentChange(OptimisticLockingFailureException ex, Language language) {
+        log.debug("Refused a change that raced another one: {}", ex.getMessage());
+        return respond(HttpStatus.CONFLICT, messages.get(CONCURRENT_CHANGE, language));
     }
 
     @ExceptionHandler(Exception.class)

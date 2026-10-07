@@ -1,11 +1,13 @@
 package com.myagree.app.store;
 
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.myagree.app.support.AgriScanApiTest;
@@ -53,7 +55,7 @@ class StoreApiTest {
     void productsWithoutFiltersReturnTheWholeCatalogue() throws Exception {
         mvc.perform(get("/api/store/products").with(users.demoFarmer()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(6))
+                .andExpect(jsonPath("$.length()").value(16))
                 .andExpect(jsonPath("$[4].shortName").value("Mancozeb 500g"))
                 .andExpect(jsonPath("$[4].flashDeal").value(false));
     }
@@ -62,7 +64,7 @@ class StoreApiTest {
     void productsCanBeFilteredByCategory() throws Exception {
         mvc.perform(get("/api/store/products").param("category", "CROP_MEDICINE").with(users.demoFarmer()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(3))
+                .andExpect(jsonPath("$.length()").value(5))
                 .andExpect(jsonPath("$[0].name").value("Tata Contaf Plus (Hexaconazole 5% SC)"))
                 .andExpect(jsonPath("$[2].shortName").value("Plot A Blight Rx Bundle"));
     }
@@ -87,7 +89,7 @@ class StoreApiTest {
     void searchTreatsWildcardCharactersLiterally() throws Exception {
         mvc.perform(get("/api/store/products").param("q", "%").with(users.demoFarmer()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(3));
+                .andExpect(jsonPath("$.length()").value(5));
     }
 
     @Test
@@ -96,5 +98,45 @@ class StoreApiTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value(
                         "Invalid value 'FERTILIZER' for 'category'. Allowed values: CROP_MEDICINE, SEEDS, TOOLS, DAIRY"));
+    }
+
+    @Test
+    void theStoreIsShownInTheReadersLanguage() throws Exception {
+        mvc.perform(get("/api/store").with(users.demoFarmer()).header(HttpHeaders.ACCEPT_LANGUAGE, "mr"))
+                .andExpect(jsonPath("$.deliveryLabel").value("24 तासांत डिलिव्हरी"))
+                .andExpect(jsonPath("$.categories[0].title").value("पीक औषधे"))
+                .andExpect(jsonPath("$.rxBundle.label").value("प्लॉट A • करपा उपचार"))
+                .andExpect(jsonPath("$.flashDeals[0].name").value("सिंजेंटा अभिनव टोमॅटो बियाणे"));
+        mvc.perform(get("/api/store/products").param("q", "मैन्कोज़ेब").with(users.demoFarmer())
+                        .header(HttpHeaders.ACCEPT_LANGUAGE, "hi"))
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].shortName").value("मैन्कोज़ेब 500 ग्राम"));
+    }
+
+    @Test
+    void eachFarmerSeesOnlyTheirOwnPrescription() throws Exception {
+        mvc.perform(get("/api/store").with(users.secondFarmer()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.rxBundle").value(nullValue()))
+                .andExpect(jsonPath("$.rxCount").value(0));
+    }
+
+    @Test
+    void productsAreFoundByTheirBarcode() throws Exception {
+        mvc.perform(get("/api/store/products/barcode/{code}", "8904567000058").with(users.demoFarmer()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.shortName").value("Mancozeb 500g"))
+                .andExpect(jsonPath("$.barcode").value("8904567000058"))
+                .andExpect(jsonPath("$.inStock").value(true));
+        mvc.perform(get("/api/store/products/barcode/{code}", "8904567000140").with(users.demoFarmer()))
+                .andExpect(jsonPath("$.inStock").value(false))
+                .andExpect(jsonPath("$.imageUrl").value(nullValue()));
+        mvc.perform(get("/api/store/products/barcode/{code}", "8904567000059").with(users.demoFarmer()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message")
+                        .value("8904567000059 is not an EAN-13 barcode: 13 digits ending in the check digit"));
+        mvc.perform(get("/api/store/products/barcode/{code}", "4006381333931").with(users.demoFarmer()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("No product has the barcode 4006381333931"));
     }
 }

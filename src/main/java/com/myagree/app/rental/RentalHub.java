@@ -1,11 +1,16 @@
 package com.myagree.app.rental;
 
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 
-/** The rental hub serving the farmer's village, e.g. "Solapur APMC Hub" covering a 12 km radius. */
+import org.hibernate.annotations.EmbeddedColumnNaming;
+
+import com.myagree.app.common.i18n.LocalizedText;
+
+/** A rental hub: the vehicles serving the villages around a market town, e.g. "Solapur APMC Hub" within 12 km. */
 @Entity
 public class RentalHub {
 
@@ -13,26 +18,31 @@ public class RentalHub {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String name;
+    @Embedded
+    @EmbeddedColumnNaming("name_%s")
+    private LocalizedText name;
+
     private int radiusKm;
-    private String routes;
-    private int onlineCount;
+
+    /** "Karmala, Kem & Kurduwadi routes" */
+    @Embedded
+    @EmbeddedColumnNaming("routes_%s")
+    private LocalizedText routes;
 
     protected RentalHub() {
     }
 
-    public RentalHub(String name, int radiusKm, String routes, int onlineCount) {
+    public RentalHub(LocalizedText name, int radiusKm, LocalizedText routes) {
         this.name = name;
         this.radiusKm = radiusKm;
         this.routes = routes;
-        this.onlineCount = onlineCount;
     }
 
     public Long getId() {
         return id;
     }
 
-    public String getName() {
+    public LocalizedText getName() {
         return name;
     }
 
@@ -40,11 +50,7 @@ public class RentalHub {
         return radiusKm;
     }
 
-    public String getRoutes() {
+    public LocalizedText getRoutes() {
         return routes;
-    }
-
-    public int getOnlineCount() {
-        return onlineCount;
     }
 }

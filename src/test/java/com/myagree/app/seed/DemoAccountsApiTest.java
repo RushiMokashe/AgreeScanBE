@@ -50,7 +50,7 @@ class DemoAccountsApiTest {
         assertThat(account.roles()).containsExactly(role);
         assertThat(account.active()).isTrue();
         assertThat(account.farmerId() != null).as("has a farmer profile").isEqualTo(role == Role.FARMER);
-        assertThat(account.ownerId()).as("owner profiles are created by the rentals feature").isNull();
+        assertThat(account.ownerId() != null).as("has a vehicle-owner profile").isEqualTo(role == Role.VEHICLE_OWNER);
     }
 
     @ParameterizedTest

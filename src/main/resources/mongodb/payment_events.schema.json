@@ -1,0 +1,76 @@
+{
+  "bsonType": "object",
+  "title": "Payment activity",
+  "description": "One change in an online payment's life (opened, processing, succeeded, failed, cancelled). The backend writes one document per change; MongoDB rejects any document that does not match this schema.",
+  "required": [
+    "paymentId",
+    "type",
+    "source",
+    "purpose",
+    "referenceId",
+    "farmerId",
+    "amountRupees",
+    "currency",
+    "provider",
+    "occurredAt"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "_id": {
+      "bsonType": "objectId",
+      "description": "MongoDB's own id for this document"
+    },
+    "paymentId": {
+      "bsonType": "long",
+      "minimum": 1,
+      "description": "The payment's id in the app's SQL database (table payment)"
+    },
+    "type": {
+      "enum": ["OPENED", "PROCESSING", "SUCCEEDED", "FAILED", "CANCELLED"],
+      "description": "What happened to the payment"
+    },
+    "source": {
+      "enum": ["CHECKOUT", "CONFIRMATION", "WEBHOOK"],
+      "description": "Who reported it: the farmer starting checkout, the app confirming after the farmer paid, or the provider's webhook"
+    },
+    "purpose": {
+      "enum": ["STORE_ORDER", "RENTAL_BOOKING"],
+      "description": "What is paid for"
+    },
+    "referenceId": {
+      "bsonType": "long",
+      "minimum": 1,
+      "description": "The order or booking id"
+    },
+    "farmerId": {
+      "bsonType": "long",
+      "minimum": 1,
+      "description": "The farmer who pays"
+    },
+    "amountRupees": {
+      "bsonType": "long",
+      "minimum": 1,
+      "description": "The amount in whole rupees"
+    },
+    "currency": {
+      "enum": ["INR"],
+      "description": "Always Indian rupees"
+    },
+    "provider": {
+      "enum": ["STRIPE", "RAZORPAY", "SIMULATED"],
+      "description": "Who processes the payment"
+    },
+    "providerReference": {
+      "bsonType": "string",
+      "description": "The provider's id for the payment: a Stripe PaymentIntent (pi_...), a Razorpay order (order_...) or sim_<id>"
+    },
+    "failureReason": {
+      "bsonType": "string",
+      "description": "Why it failed, as the provider said; only on FAILED"
+    },
+    "occurredAt": {
+      "bsonType": "date",
+      "description": "When it happened"
+    }
+  }
+}

@@ -1,13 +1,18 @@
 package com.myagree.app.seed;
 
+import static com.myagree.app.seed.SeedText.en;
+
 import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 
 import org.springframework.stereotype.Component;
 
+import com.myagree.app.common.i18n.LocalizedText;
 import com.myagree.app.mandi.BuyerInquiry;
 import com.myagree.app.mandi.BuyerInquiryRepository;
+import com.myagree.app.mandi.Commodity;
 import com.myagree.app.mandi.CommodityPrice;
 import com.myagree.app.mandi.CommodityPriceRepository;
 import com.myagree.app.mandi.DemandLevel;
@@ -22,7 +27,7 @@ class MandiSeed implements DemoSeed {
 
     /** "Updated 18 min ago" in the design. */
     private static final Duration PRICES_UPDATED_AGO = Duration.ofMinutes(18);
-    private static final String QUINTAL = "Quintal";
+    private static final LocalizedText QUINTAL = en("Quintal");
 
     private final MandiMarketRepository marketRepository;
     private final CommodityPriceRepository priceRepository;
@@ -44,20 +49,26 @@ class MandiSeed implements DemoSeed {
 
     @Override
     public void seed(SeedContext context) {
+        Instant pricesUpdatedAt = clock.instant().minus(PRICES_UPDATED_AGO);
         MandiMarket market = marketRepository.save(new MandiMarket(
-                "Solapur APMC Mandi", "Solapur Main APMC", true,
-                "Market Open • Trading Active", "Live Wholesale Board • आजचे बाजारभाव",
-                8450, "/images/mandi/solapur-apmc.jpg",
-                new MandiHelpline("18002331020", "1800-233-1020", "6 AM - 8 PM"),
+                en("Solapur APMC Mandi"), en("Solapur Main APMC"), en("Solapur"),
+                en("Live Wholesale Board • आजचे बाजारभाव"), "/images/mandi/solapur-apmc.jpg",
+                new MandiHelpline("18002331020", "1800-233-1020", en("6 AM - 8 PM")),
                 new PriceForecast("Festive Surge", "Tomato wholesale rates projected to rise **₹150–220/Qtl** over next "
                         + "72 hrs. Recommended sale window: **Tomorrow to Thursday**."),
-                clock.instant().minus(PRICES_UPDATED_AGO)));
+                8450, pricesUpdatedAt));
         priceRepository.saveAll(List.of(
-                new CommodityPrice(market, "Vegetable", "Tomato (Hybrid)", "Grade A (Crates)", 1850, 2400, QUINTAL, 180, DemandLevel.HIGH_DEMAND),
-                new CommodityPrice(market, "Bulb", "Red Onion (Garwa)", "Solapur Medium", 2100, 2750, QUINTAL, 0, DemandLevel.STABLE),
-                new CommodityPrice(market, "Cereal", "Wheat (Lokwan)", "Dry Hard Grain", 2800, 3100, QUINTAL, 40, DemandLevel.STEADY),
-                new CommodityPrice(market, "Spices", "Green Chilli (G-4)", "Dark Green Crisp", 3400, 3950, QUINTAL, 420, DemandLevel.HOT)));
+                price(market, "Vegetable", "Tomato (Hybrid)", "Grade A (Crates)", 1850, 2400, DemandLevel.HIGH_DEMAND, 180, pricesUpdatedAt),
+                price(market, "Bulb", "Red Onion (Garwa)", "Solapur Medium", 2100, 2750, DemandLevel.STABLE, 0, pricesUpdatedAt),
+                price(market, "Cereal", "Wheat (Lokwan)", "Dry Hard Grain", 2800, 3100, DemandLevel.STEADY, 40, pricesUpdatedAt),
+                price(market, "Spices", "Green Chilli (G-4)", "Dark Green Crisp", 3400, 3950, DemandLevel.HOT, 420, pricesUpdatedAt)));
         inquiryRepository.saveAll(List.of(retailInquiry(market), exportInquiry(market), processingInquiry(market)));
+    }
+
+    private static CommodityPrice price(MandiMarket market, String category, String name, String grade, int minPrice,
+                                        int maxPrice, DemandLevel demand, int changeAmount, Instant updatedAt) {
+        Commodity commodity = new Commodity(en(category), en(name), en(grade), QUINTAL);
+        return new CommodityPrice(market, commodity, minPrice, maxPrice, demand, changeAmount, updatedAt);
     }
 
     private static BuyerInquiry retailInquiry(MandiMarket market) {

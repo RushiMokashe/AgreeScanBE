@@ -5,6 +5,7 @@ public record MandiMarketResponse(
         long id,
         String name,
         String shortName,
+        String district,
         boolean open,
         String statusLabel,
         String boardLabel,

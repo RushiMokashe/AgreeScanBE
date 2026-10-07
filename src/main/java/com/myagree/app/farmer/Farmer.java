@@ -6,7 +6,9 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 
-/** A registered farmer: the farmer profile of one user account. */
+import org.jspecify.annotations.Nullable;
+
+/** A registered farmer: the farmer profile of one user account, with the hub and market they chose. */
 @Entity
 public class Farmer {
 
@@ -22,6 +24,12 @@ public class Farmer {
     private String location;
     private String season;
     private String avatarUrl;
+
+    /** The rental hub chosen on the rentals screen; {@code null} for the default hub. */
+    private @Nullable Long preferredRentalHubId;
+
+    /** The mandi market chosen on the mandi screen; {@code null} for the default market. */
+    private @Nullable Long preferredMandiMarketId;
 
     protected Farmer() {
     }
@@ -56,5 +64,21 @@ public class Farmer {
 
     public String getAvatarUrl() {
         return avatarUrl;
+    }
+
+    public @Nullable Long getPreferredRentalHubId() {
+        return preferredRentalHubId;
+    }
+
+    public @Nullable Long getPreferredMandiMarketId() {
+        return preferredMandiMarketId;
+    }
+
+    void preferRentalHub(long hubId) {
+        this.preferredRentalHubId = hubId;
+    }
+
+    void preferMandiMarket(long marketId) {
+        this.preferredMandiMarketId = marketId;
     }
 }

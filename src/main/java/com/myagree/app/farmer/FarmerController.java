@@ -1,9 +1,12 @@
 package com.myagree.app.farmer;
 
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.myagree.app.farmer.dto.FarmerPreferencesRequest;
 import com.myagree.app.farmer.dto.FarmerProfileResponse;
 
 @RestController
@@ -19,5 +22,10 @@ class FarmerController {
     @GetMapping("/me")
     FarmerProfileResponse currentFarmer() {
         return farmerService.currentFarmer();
+    }
+
+    @PutMapping("/me/preferences")
+    FarmerProfileResponse updatePreferences(@RequestBody FarmerPreferencesRequest request) {
+        return farmerService.updatePreferences(request);
     }
 }

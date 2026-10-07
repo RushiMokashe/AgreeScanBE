@@ -10,6 +10,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import com.myagree.app.common.i18n.LanguageArgumentResolver;
 import com.myagree.app.common.security.CurrentUserArgumentResolver;
 import com.myagree.app.common.security.CurrentUserProvider;
+import com.myagree.app.common.security.NativeClient;
 
 /**
  * Controller parameters every feature may declare ({@code Language}, {@code CurrentUser}) and CORS. The Vite dev
@@ -28,9 +29,12 @@ class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
+        // The Vite dev server and the installed app call the API from other origins; the app also reads the refresh
+        // token from a response header (NativeClient).
         registry.addMapping("/api/**")
                 .allowedOrigins(properties.corsAllowedOrigins().toArray(String[]::new))
-                .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE");
+                .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE")
+                .exposedHeaders(NativeClient.REFRESH_TOKEN_HEADER);
     }
 
     @Override

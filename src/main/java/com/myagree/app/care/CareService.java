@@ -10,6 +10,7 @@ import com.myagree.app.care.dto.AgronomistResponse;
 import com.myagree.app.care.dto.NearbyStockResponse;
 import com.myagree.app.care.dto.OnlineOfferResponse;
 import com.myagree.app.common.NotFoundException;
+import com.myagree.app.common.i18n.Language;
 import com.myagree.app.store.StoreService;
 import com.myagree.app.store.dto.ProductResponse;
 
@@ -31,10 +32,10 @@ public class CareService {
     }
 
     /** Dealers within the farmer's agro hub that stock the current prescription, nearest first. */
-    public NearbyStockResponse nearbyStock() {
+    public NearbyStockResponse nearbyStock(Language language) {
         AgroHub hub = localHub();
         List<AgroDealer> dealers = dealerRepository.findByDistanceKmLessThanEqualOrderByDistanceKmAsc(hub.getRadiusKm());
-        return CareMapper.toResponse(hub, onlineOffer(hub), dealers);
+        return CareMapper.toResponse(hub, onlineOffer(hub, language), dealers);
     }
 
     /** How many local stores stock a prescription, as shown on a diagnosis ("2 local stores stock this Rx"). */
@@ -55,12 +56,12 @@ public class CareService {
     }
 
     /** The hub's online offer, priced from the store's current catalogue; {@code null} when the hub has none. */
-    private @Nullable OnlineOfferResponse onlineOffer(AgroHub hub) {
+    private @Nullable OnlineOfferResponse onlineOffer(AgroHub hub, Language language) {
         OnlineOffer offer = hub.getOnlineOffer();
         if (offer == null) {
             return null;
         }
-        ProductResponse product = storeService.getProduct(offer.productId());
+        ProductResponse product = storeService.getProduct(offer.productId(), language);
         return CareMapper.toResponse(offer, product);
     }
 }
